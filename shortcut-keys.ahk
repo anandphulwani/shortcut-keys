@@ -167,6 +167,9 @@ If ( !parsedCredentialsJSON.haskey("password") || !parsedCredentialsJSON.passwor
 F8:: ; F8 hotkey.
     If WinExist("Radmin security: ")
     {
+        Username = User	
+        Password = % parsedCredentialsJSON.password.password
+
         bufferClipboard:= clipboard
         WinActivate ; Uses the last found window.
 
@@ -175,6 +178,9 @@ F8:: ; F8 hotkey.
         WaitControlLoad("Button1", "Radmin security: ")	
         WaitControlLoad("Button2", "Radmin security: ")
 
+	    ControlSetText, Edit1, % Username, Radmin security:
+	    ControlSetText, Edit2, % Password, Radmin security:
+	
         clipboard = User
         ControlSetText, Edit1, 
         Clip:= clipboard, SetTxt:= ""
