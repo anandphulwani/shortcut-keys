@@ -176,6 +176,10 @@ F8:: ; F8 hotkey.
         BringControlToFocus("Edit1")
         WaitUntilControlHasFocus("Edit1")
         ; Sleep, 2000 
+        ControlSend, Edit1, {End}, A	
+        ; Sleep, 2000 	
+        ; ControlSend, Edit1, {Shift down}{Home}{Shift up}, A	
+        ; Sleep, 2000 	
         ; ControlSend, Edit1, {Del}, A
         ; Sleep, 2000 
         ControlSend, Edit1, {Shift down}u{Shift up}, A
