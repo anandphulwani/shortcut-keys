@@ -201,10 +201,11 @@ F8:: ; F8 hotkey.
             ControlSend, Button1, {Space}, A
         }
 
-        BringControlToFocus("OK")
-        WaitUntilControlHasFocus("OK")
-        ControlSend, OK, {Space}, A
-        WinWaitClose, "Radmin security: "
+        While (WinExist("Radmin security: ")) {	
+            ControlClick, OK, Radmin security:	
+            Sleep, 500	
+        }
+
         clipboard:= bufferClipboard
         return
     }
