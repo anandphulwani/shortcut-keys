@@ -170,7 +170,7 @@ F8:: ; F8 hotkey.
         Username = User	
         Password = % parsedCredentialsJSON.password.password
 
-        bufferClipboard:= clipboard
+        bufferClipboard := clipboard
         WinActivate ; Uses the last found window.
 
         WaitControlLoad("Edit1", "Radmin security: ")	
