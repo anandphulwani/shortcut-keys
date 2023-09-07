@@ -170,35 +170,35 @@ F8:: ; F8 hotkey.
         bufferClipboard:= clipboard
         WinActivate ; Uses the last found window.
 
-        WaitControlLoad("Edit1")
-        WaitControlLoad("Edit2")
-        WaitControlLoad("Button1")
-        WaitControlLoad("Button2")
+        WaitControlLoad("Edit1", "Radmin security: ")	
+        WaitControlLoad("Edit2", "Radmin security: ")	
+        WaitControlLoad("Button1", "Radmin security: ")	
+        WaitControlLoad("Button2", "Radmin security: ")
 
         clipboard = User
         ControlSetText, Edit1, 
         Clip:= clipboard, SetTxt:= ""
         While (Clip != SetTxt && A_index < 5) {
-            ControlSetText, Edit1, % clipboard, A
+            ControlSetText, Edit1, % clipboard, Radmin security:
             Sleep, 10
-            ControlGetText, SetTxt, Edit1, A
+            ControlGetText, SetTxt, Edit1, Radmin security:
         }
 
         clipboard = % parsedCredentialsJSON.password.password
         ControlSetText, Edit2, 
         Clip:= clipboard, SetTxt:= ""
         While (Clip != SetTxt && A_index < 5) {
-            ControlSetText, Edit2, % clipboard, A
+            ControlSetText, Edit2, % clipboard, Radmin security:
             Sleep, 10
-            ControlGetText, SetTxt, Edit2, A
+            ControlGetText, SetTxt, Edit2, Radmin security:
         }
 
-        ControlGet, saveUserChkBox, Checked , , Button1, A
+        ControlGet, saveUserChkBox, Checked , , Button1, Radmin security:
         If (saveUserChkBox = 0)
         {
             BringControlToFocus("Button1")
             WaitUntilControlHasFocus("Button1")
-            ControlSend, Button1, {Space}, A
+            ControlSend, Button1, {Space}, Radmin security:
         }
 
         While (WinExist("Radmin security: ")) {	
