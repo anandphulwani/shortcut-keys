@@ -14,6 +14,7 @@ SetKeyDelay, 10, 10
 SetWorkingDir %A_ScriptDir% ; Ensures a consistent starting directory.
 
 #Persistent
+#SingleInstance ignore
 #Include %A_ScriptDir%\Includes\IncludeVariables.ahk
 #Include %A_ScriptDir%\Includes\JSON.ahk
 #Include %A_ScriptDir%\Includes\RC4Functions.ahk
