@@ -1,4 +1,4 @@
-#Include %A_ScriptDir%\Acc.ahk
+#Include %A_ScriptDir%\Includes\Acc.ahk
 
 SplitPath, A_ScriptName,,,, ScriptName
 IniRead, WinDelay, Parameters.ini, %ScriptName%, WinDelay
