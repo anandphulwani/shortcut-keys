@@ -7,7 +7,7 @@
 ; Script Function:
 ;	Template script (you can customize this template by editing "ShellNew\Template.ahk" in your Windows folder)
 ;
-SetTitleMatchMode, 2
+SetTitleMatchMode, 1
 #NoEnv ; Recommended for performance and compatibility with future AutoHotkey releases.
 ; SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
 SetKeyDelay, 10, 10
