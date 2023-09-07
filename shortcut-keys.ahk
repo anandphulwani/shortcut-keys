@@ -167,6 +167,7 @@ If ( !parsedCredentialsJSON.haskey("password") || !parsedCredentialsJSON.passwor
 F8:: ; F8 hotkey.
     If WinExist("Radmin security: ")
     {
+        bufferClipboard:= clipboard
         WinActivate ; Uses the last found window.
 
         WaitControlLoad("Edit1")
@@ -175,32 +176,22 @@ F8:: ; F8 hotkey.
         WaitControlLoad("Button2")
 
         clipboard = User
-        BringControlToFocus("Edit1")
-        WaitUntilControlHasFocus("Edit1")
-        ControlSend, Edit1, {Ctrl down}{a}{Ctrl up}, A
-        ControlSend, Edit1, {Del}, A
-        ControlSend, Edit1, {Ctrl down}{v}{Ctrl up}, A
+        ControlSetText, Edit1, 
+        Clip:= clipboard, SetTxt:= ""
+        While (Clip != SetTxt && A_index < 5) {
+            ControlSetText, Edit1, % clipboard, A
+            Sleep, 50
+            ControlGetText, SetTxt, Edit1, A
+        }
 
         clipboard = % parsedCredentialsJSON.password.password
-        BringControlToFocus("Edit2")
-        WaitUntilControlHasFocus("Edit2")
-        ControlSend, Edit2, {Ctrl down}{v}{Ctrl up}, A
-        ; ;Sleep, 2000 
-        ; ControlSend, Edit1, {End}, A
-        ; ;Sleep, 2000 
-        ; ;ControlSend, Edit1, {Shift down}{Home}{Shift up}, A
-        ; ;Sleep, 2000 
-        ; ;ControlSend, Edit1, {Del}, A
-        ; ;Sleep, 2000 
-        ; ControlSend, Edit1, {Shift down}u{Shift up}, A
-        ; ;Sleep, 2000 
-        ; ControlSend, Edit1, ser, A
-        ; BringControlToFocus("Edit2")
-        ; ;Sleep, 2000 
-        ; WaitUntilControlHasFocus("Edit2")
-        ; ;Sleep, 2000 
-        ; ControlSend, Edit2, % parsedCredentialsJSON.password.password, A
-        ; ;Sleep, 2000 
+        ControlSetText, Edit2, 
+        Clip:= clipboard, SetTxt:= ""
+        While (Clip != SetTxt && A_index < 5) {
+            ControlSetText, Edit2, % clipboard, A
+            Sleep, 50
+            ControlGetText, SetTxt, Edit2, A
+        }
 
         ControlGet, saveUserChkBox, Checked , , Button1, A
         If (saveUserChkBox = 0)
@@ -214,6 +205,7 @@ F8:: ; F8 hotkey.
         WaitUntilControlHasFocus("OK")
         ControlSend, OK, {Space}, A
         WinWaitClose, "Radmin security: "
+        clipboard:= bufferClipboard
         return
     }
     Else If WinExist("asdasdasdasdasdasdasdasdasdasdasdasdasdadsasdasdgfgakjhsdjsadfhkjsdfhjksdgfhjsdgfkjhsadfyedsfsadgflhkjsagdfhjsgdkjfbsdcxv")
