@@ -181,7 +181,7 @@ F8:: ; F8 hotkey.
 	    ControlSetText, Edit1, % Username, Radmin security:
 	    ControlSetText, Edit2, % Password, Radmin security:
 	
-        clipboard = User
+        clipboard := Username
         ControlSetText, Edit1, 
         Clip:= clipboard, SetTxt:= ""
         While (Clip != SetTxt && A_index < 5) {
