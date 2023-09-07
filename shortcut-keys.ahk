@@ -182,8 +182,8 @@ F8:: ; F8 hotkey.
 	    ControlSetText, Edit2, % Password, Radmin security:
 	
         clipboard := Username
-        ControlSetText, Edit1, 
         Clip:= clipboard, SetTxt:= ""
+        ControlGetText, SetTxt, Edit1, Radmin security:
         While (Clip != SetTxt && A_index < 5) {
             ToolTip, Got in the User loop
             ControlSetText, Edit1, % clipboard, Radmin security:
