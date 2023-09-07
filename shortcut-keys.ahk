@@ -231,8 +231,7 @@ F8:: ; F8 hotkey.
         Send, % parsedCredentialsJSON.password.password
 
         ToolTip, Entry done on %CurrTitle%.
-        Sleep, 2000
-        ToolTip
+        SetTimer, RemoveToolTip, -5000
         return
     }
 return
@@ -243,4 +242,9 @@ return
     SetKeyDelay, 30
     SendEvent, {Raw}%CommandToRun%
     SetKeyDelay, %CurrentKeyDelay%
+return
+
+#IfWinActive
+RemoveToolTip:
+    ToolTip
 return
