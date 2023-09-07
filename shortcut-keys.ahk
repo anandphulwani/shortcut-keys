@@ -180,7 +180,7 @@ F8:: ; F8 hotkey.
         Clip:= clipboard, SetTxt:= ""
         While (Clip != SetTxt && A_index < 5) {
             ControlSetText, Edit1, % clipboard, A
-            Sleep, 50
+            Sleep, 10
             ControlGetText, SetTxt, Edit1, A
         }
 
@@ -189,7 +189,7 @@ F8:: ; F8 hotkey.
         Clip:= clipboard, SetTxt:= ""
         While (Clip != SetTxt && A_index < 5) {
             ControlSetText, Edit2, % clipboard, A
-            Sleep, 50
+            Sleep, 10
             ControlGetText, SetTxt, Edit2, A
         }
 
@@ -219,11 +219,11 @@ F8:: ; F8 hotkey.
     {
         WinGetTitle, CurrTitle, A
         ToolTip, Doing entry in 3 deci - seconds on %CurrTitle%.
-        Sleep, 80
+        Sleep, 20
         ToolTip, Doing entry in 2 deci - seconds on %CurrTitle%.
-        Sleep, 80
+        Sleep, 20
         ToolTip, Doing entry in 1 deci - seconds on %CurrTitle%.
-        Sleep, 80
+        Sleep, 20
         ToolTip
 
         WinGetTitle, CurrTitle, A
