@@ -273,7 +273,7 @@ return
         Gui, Destroy
 return
 
-#IfWinActive
+#IfWinActive ; turn off context sensitivity
 RemoveToolTip:
     ToolTip
 return
