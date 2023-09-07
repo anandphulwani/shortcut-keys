@@ -213,10 +213,6 @@ F8:: ; F8 hotkey.
     Else
     {
         WinGetTitle, CurrTitle, A
-        ToolTip, Doing entry in 5 deci - seconds on %CurrTitle%.
-        Sleep, 80
-        ToolTip, Doing entry in 4 deci - seconds on %CurrTitle%.
-        Sleep, 80
         ToolTip, Doing entry in 3 deci - seconds on %CurrTitle%.
         Sleep, 80
         ToolTip, Doing entry in 2 deci - seconds on %CurrTitle%.
@@ -230,7 +226,16 @@ F8:: ; F8 hotkey.
         Send, % parsedCredentialsJSON.password.password
 
         ToolTip, Entry done on %CurrTitle%.
-        Sleep, 4000
+        Sleep, 2000
         ToolTip
         return
     }
+return
+
+^F8:: ; Ctrl+F8 hotkey.
+    InputBox, CommandToRun
+    CurrentKeyDelay := A_KeyDelay
+    SetKeyDelay, 30
+    SendEvent, %CommandToRun%
+    SetKeyDelay, %CurrentKeyDelay%
+return
