@@ -240,6 +240,6 @@ return
     InputBox, CommandToRun
     CurrentKeyDelay := A_KeyDelay
     SetKeyDelay, 30
-    SendEvent, %CommandToRun%
+    SendEvent, {Raw}%CommandToRun%
     SetKeyDelay, %CurrentKeyDelay%
 return
