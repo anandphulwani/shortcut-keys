@@ -191,13 +191,14 @@ F8:: ; F8 hotkey.
             ControlGetText, SetTxt, Edit1, Radmin security:
         }
 
-        clipboard = % parsedCredentialsJSON.password.password
-        ControlSetText, Edit2, 
-        Clip:= clipboard, SetTxt:= ""
-        While (Clip != SetTxt && A_index < 5) {
-            ControlSetText, Edit2, % clipboard, Radmin security:
-            Sleep, 10
-            ControlGetText, SetTxt, Edit2, Radmin security:
+        ; TODO: Get pixel color from selected window
+        ; TODO: Check password length to compute the last asterisk is present
+        PixelGetColor, passwordLastLetterColor, 154, 90
+        While (passwordLastLetterColor != 0x000000 && A_index < 5) {
+            ToolTip, Got in the Password loop
+            ControlSetText, Edit2, % Password, Radmin security:
+            Sleep, 100
+            PixelGetColor, passwordLastLetterColor, 154, 90
         }
 
         ControlGet, saveUserChkBox, Checked , , Button1, Radmin security:
