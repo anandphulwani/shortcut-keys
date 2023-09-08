@@ -39,3 +39,4 @@ GuiClose:
     Gui, 1:Destroy
     Gui, Destroy
 return
+#IfWinActive ; turn off context sensitivity
