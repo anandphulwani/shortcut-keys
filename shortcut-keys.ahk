@@ -38,6 +38,6 @@ PasswordAutoFillMode := true
 #Include %A_ScriptDir%\textToSend.ahk
 
 #IfWinActive ; turn off context sensitivity
-RemoveToolTip:
-    ToolTip
-return
+    RemoveToolTip:
+        ToolTip
+    return

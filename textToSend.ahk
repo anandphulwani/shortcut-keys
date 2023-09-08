@@ -1,7 +1,7 @@
-#NoEnv  ; Recommended for performance and compatibility with future AutoHotkey releases.
+#NoEnv ; Recommended for performance and compatibility with future AutoHotkey releases.
 ; #Warn  ; Enable warnings to assist with detecting common errors.
 ; SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
-SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
+SetWorkingDir %A_ScriptDir% ; Ensures a consistent starting directory.
 
 ^F8:: ; Ctrl+F8 hotkey.
     if WinExist("ahk_group ShortcutKeys_Text_To_Send_Grp")
@@ -17,25 +17,25 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
     Gui, 1:+LastFound
     Gui1_ID := WinExist()
     GroupAdd, ShortcutKeys_Text_To_Send_Grp, ahk_id %Gui1_ID%
-    Return
-    #IfWinActive, ahk_group ShortcutKeys_Text_To_Send_Grp
-    ^ENTER::
-    ^NUMPADENTER::
-    okay_pressed:
-        Gui 1:+LastFoundExist
-        if (!WinExist()) {
-            return
-        }
-        Gui 1:Submit
-        Gui 1:Destroy
-        CurrentKeyDelay := A_KeyDelay
-        SetKeyDelay, 30
-        SendEvent, {Raw}%input%
-        SetKeyDelay, %CurrentKeyDelay%
-    Return
-    ButtonCancel:
-    GuiEscape:
-    GuiClose:
-        Gui, 1:Destroy
-        Gui, Destroy
+Return
+#IfWinActive, ahk_group ShortcutKeys_Text_To_Send_Grp
+^ENTER::
+^NUMPADENTER::
+okay_pressed:
+    Gui 1:+LastFoundExist
+    if (!WinExist()) {
+        return
+    }
+    Gui 1:Submit
+    Gui 1:Destroy
+    CurrentKeyDelay := A_KeyDelay
+    SetKeyDelay, 30
+    SendEvent, {Raw}%input%
+    SetKeyDelay, %CurrentKeyDelay%
+Return
+ButtonCancel:
+GuiEscape:
+GuiClose:
+    Gui, 1:Destroy
+    Gui, Destroy
 return

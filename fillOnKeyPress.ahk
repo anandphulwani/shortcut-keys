@@ -1,12 +1,12 @@
-#NoEnv  ; Recommended for performance and compatibility with future AutoHotkey releases.
+#NoEnv ; Recommended for performance and compatibility with future AutoHotkey releases.
 ; #Warn  ; Enable warnings to assist with detecting common errors.
 ; SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
-SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
+SetWorkingDir %A_ScriptDir% ; Ensures a consistent starting directory.
 
 F8:: ; F8 hotkey.
     If WinExist("Radmin security: ")
     {
-        Username = User	
+        Username = User
         Password = % parsedCredentialsJSON.password.password
 
         bufferClipboard := clipboard
@@ -17,9 +17,9 @@ F8:: ; F8 hotkey.
         WaitControlLoad("Button1", "Radmin security: ")	
         WaitControlLoad("Button2", "Radmin security: ")
 
-	    ControlSetText, Edit1, % Username, "Radmin security:"
-	    ControlSetText, Edit2, % Password, "Radmin security:"
-	
+        ControlSetText, Edit1, % Username, "Radmin security:"
+        ControlSetText, Edit2, % Password, "Radmin security:"
+
         clipboard := Username
         Clip:= clipboard, SetTxt:= ""
         ControlGetText, SetTxt, Edit1, "Radmin security:"
