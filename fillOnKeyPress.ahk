@@ -17,17 +17,17 @@ F8:: ; F8 hotkey.
         WaitControlLoad("Button1", "Radmin security: ")	
         WaitControlLoad("Button2", "Radmin security: ")
 
-	    ControlSetText, Edit1, % Username, Radmin security:
-	    ControlSetText, Edit2, % Password, Radmin security:
+	    ControlSetText, Edit1, % Username, "Radmin security:"
+	    ControlSetText, Edit2, % Password, "Radmin security:"
 	
         clipboard := Username
         Clip:= clipboard, SetTxt:= ""
-        ControlGetText, SetTxt, Edit1, Radmin security:
+        ControlGetText, SetTxt, Edit1, "Radmin security:"
         While (Clip != SetTxt && A_index < 5) {
             ToolTip, Got in the User loop
-            ControlSetText, Edit1, % clipboard, Radmin security:
+            ControlSetText, Edit1, % clipboard, "Radmin security:"
             Sleep, 100
-            ControlGetText, SetTxt, Edit1, Radmin security:
+            ControlGetText, SetTxt, Edit1, "Radmin security:"
         }
 
         ; TODO: Get pixel color from selected window
@@ -35,21 +35,21 @@ F8:: ; F8 hotkey.
         PixelGetColor, passwordLastLetterColor, 154, 90
         While (passwordLastLetterColor != 0x000000 && A_index < 5) {
             ToolTip, Got in the Password loop
-            ControlSetText, Edit2, % Password, Radmin security:
+            ControlSetText, Edit2, % Password, "Radmin security:"
             Sleep, 100
             PixelGetColor, passwordLastLetterColor, 154, 90
         }
 
-        ControlGet, saveUserChkBox, Checked , , Button1, Radmin security:
+        ControlGet, saveUserChkBox, Checked , , Button1, "Radmin security:"
         If (saveUserChkBox = 0)
         {
             BringControlToFocus("Button1")
             WaitUntilControlHasFocus("Button1")
-            ControlSend, Button1, {Space}, Radmin security:
+            ControlSend, Button1, {Space}, "Radmin security:"
         }
 
         While (WinExist("Radmin security: ")) {	
-            ControlClick, OK, Radmin security:	
+            ControlClick, OK, "Radmin security:"	
             Sleep, 500	
         }
 
