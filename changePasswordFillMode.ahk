@@ -8,6 +8,6 @@ SetWorkingDir %A_ScriptDir% ; Ensures a consistent starting directory.
     ToolTip, % "Password automatic fill mode set to: " . ( PasswordAutoFillMode ? "Enabled" : "Disabled" )
     SetTimer, RemoveToolTip, -1500
     if (PasswordAutoFillMode) {
-        WaitForWindowToAppear()
+        ; WaitForWindowToAppear()
     }
 return
