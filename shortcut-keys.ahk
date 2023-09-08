@@ -28,6 +28,11 @@ If ( !parsedCredentialsJSON.haskey("password") || !parsedCredentialsJSON.passwor
     ExitApp ; Exit the AutoHotkey script
 }
 
+PasswordAutoFillMode := true
+; WaitForWindowToAppear()
+
+#Include %A_ScriptDir%\changePasswordFillMode.ahk
+
 #Include %A_ScriptDir%\fillOnKeyPress.ahk
 
 #Include %A_ScriptDir%\textToSend.ahk
