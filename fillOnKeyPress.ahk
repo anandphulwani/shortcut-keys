@@ -24,7 +24,7 @@ F8:: ; F8 hotkey.
         Clip:= clipboard, SetTxt:= ""
         ControlGetText, SetTxt, Edit1, "Radmin security:"
         While (Clip != SetTxt && A_index < 5) {
-            ToolTip, Got in the User loop
+            ToolTip, % "Got in the User loop"
             ControlSetText, Edit1, % clipboard, "Radmin security:"
             Sleep, 100
             ControlGetText, SetTxt, Edit1, "Radmin security:"
@@ -34,7 +34,7 @@ F8:: ; F8 hotkey.
         ; TODO: Check password length to compute the last asterisk is present
         PixelGetColor, passwordLastLetterColor, 154, 90
         While (passwordLastLetterColor != 0x000000 && A_index < 5) {
-            ToolTip, Got in the Password loop
+            ToolTip, % "Got in the Password loop"
             ControlSetText, Edit2, % Password, "Radmin security:"
             Sleep, 100
             PixelGetColor, passwordLastLetterColor, 154, 90
