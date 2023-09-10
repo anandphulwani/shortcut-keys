@@ -82,4 +82,5 @@ F8:: ; F8 hotkey.
         SetTimer, RemoveToolTip, -5000
         return
     }
+    Sleep 2000 ; TODO: Remove this
 return
