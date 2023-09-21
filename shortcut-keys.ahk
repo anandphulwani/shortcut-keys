@@ -14,6 +14,7 @@ SetKeyDelay, 10, 10
 SetWorkingDir %A_ScriptDir% ; Ensures a consistent starting directory.
 
 #Persistent
+#InstallKeybdHook
 #SingleInstance ignore
 
 #Include %A_ScriptDir%\Includes\IncludeVariables.ahk
