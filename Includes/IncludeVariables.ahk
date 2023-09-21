@@ -323,3 +323,26 @@ WaitUntilNameMatches(obj, nameToWait, timeout=86400000)
         Tooltip, name has been found
         }
     }
+
+RemoveConsecutiveDuplicates(inputString) 
+    {
+    ; Initialize an empty string to store the result
+    resultString := ""
+
+    ; Initialize a variable to store the previous character
+    prevChar := ""
+
+    ; Iterate through each character in the input string
+    for i, char in StrSplit(inputString, "")
+        {
+        ; If the current character is different from the previous character, add it to the result string
+        if (i = 1 || char != prevChar)
+            resultString .= char
+
+        ; Update the previous character for the next iteration
+        prevChar := char
+        }
+
+    ; Return the result string
+    return resultString
+    }
