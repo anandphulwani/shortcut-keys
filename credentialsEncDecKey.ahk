@@ -149,3 +149,8 @@ If ( !parsedCredentialsJSON.haskey("passwords") || !parsedCredentialsJSON.passwo
     MsgBox, Does not contain normal password key or password.password key. Exiting program.
     ExitApp
 }
+
+; To read JSON Object/subObject
+; stringified := JSON.Dump(windowComponents,, 4)
+; stringified := StrReplace(stringified, "`n", "`r`n") 
+; Tooltip, % stringified
