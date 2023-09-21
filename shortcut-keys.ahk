@@ -23,12 +23,12 @@ SetWorkingDir %A_ScriptDir% ; Ensures a consistent starting directory.
 PasswordAutoFillMode := true
 toolTip2Mesg := 
 
-#Include %A_ScriptDir%\changePasswordFillMode.ahk
 #Include %A_ScriptDir%\fillAutomaticallyCaller.ahk
 #Include %A_ScriptDir%\fillOnKeyPress_functions.ahk
 
 #Include %A_ScriptDir%\fillOnKeyPress.ahk
 
+#Include %A_ScriptDir%\changePasswordFillMode.ahk
 #Include %A_ScriptDir%\textToSend.ahk
 
 RemoveToolTip:
