@@ -19,9 +19,14 @@ F8:: ; F8 hotkey.
         }
         Sleep 5
     }
+    If (longPress)
     {
+        toolTip2Mesg .= StartTime . ": Long press Block (" . A_ThisHotkey . ") `r`n"
+        fillOnKeyPress(true, additionalModifier)
     }
     Else
     {
+        toolTip2Mesg .= StartTime . ": Short press Block (" . A_ThisHotkey . ") `r`n"
+        fillOnKeyPress(false, additionalModifier)
     }
 return
