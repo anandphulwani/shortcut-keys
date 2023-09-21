@@ -1,4 +1,5 @@
 ^F8:: ; Ctrl+F8 hotkey.
+    global toolTip2Mesg, parsedCredentialsJSON
     if WinExist("ahk_group ShortcutKeys_Text_To_Send_Grp")
     {
         WinActivate
