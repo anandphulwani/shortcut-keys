@@ -20,7 +20,7 @@ SetWorkingDir %A_ScriptDir% ; Ensures a consistent starting directory.
 #Include %A_ScriptDir%\credentialsEncDecKey.ahk
 
 PasswordAutoFillMode := true
-; WaitForWindowToAppear()
+toolTip2Mesg := 
 
 #Include %A_ScriptDir%\changePasswordFillMode.ahk
 #Include %A_ScriptDir%\fillAutomaticallyCaller.ahk
@@ -30,5 +30,6 @@ PasswordAutoFillMode := true
 #Include %A_ScriptDir%\textToSend.ahk
 
 RemoveToolTip:
+    SetTimer, RemoveToolTip, Off
     ToolTip
 return
