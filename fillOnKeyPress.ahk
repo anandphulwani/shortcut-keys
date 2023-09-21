@@ -26,22 +26,18 @@ F8:: ; F8 hotkey.
         {
             longPress := true
             SoundBeep, 1000, 120
-            toolTip2Mesg .= StartTime . ": Long press Activated (" . A_ThisHotkey . ") `r`n"
-            ToolTip, % toolTip2Mesg
+            AddMessageAndDisplayTooltip(StartTime . ": Long press Activated (" . A_ThisHotkey . ")")
         }
         Sleep 5
     }
     If (longPress)
     {
-        toolTip2Mesg .= StartTime . ": Long press Block (" . A_ThisHotkey . ") `r`n"
+        AddMessageAndDisplayTooltip(StartTime . ": Long press Block (" . A_ThisHotkey . ")")
         fillOnKeyPress(true, additionalModifier)
     }
     Else
     {
-        toolTip2Mesg .= StartTime . ": Short press Block (" . A_ThisHotkey . ") `r`n"
+        AddMessageAndDisplayTooltip(StartTime . ": Short press Block (" . A_ThisHotkey . ")")
         fillOnKeyPress(false, additionalModifier)
     }
-
-    ToolTip, % toolTip2Mesg
-    SetTimer, RemoveToolTip, -5000
 return

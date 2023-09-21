@@ -1,5 +1,6 @@
 ^ENTER::
 ^NUMPADENTER::
+    global toolTip2Mesg, parsedCredentialsJSON
     WinGet, currentWindowId, ID, A
     WinGet, currentProcessName, ProcessName, A
     If (currentProcessName != "AutoHotkey.exe")
@@ -20,8 +21,7 @@
     {
         while(WinExist("ahk_id " currentWindowId) && A_INDEX < 20) {
             ControlClick, Button1, % "ahk_id " currentWindowId
-            tooltipMesg .= "Got in the " . A_ThisHotkey . " section, to submit the form : " . A_INDEX . "`r`n"
-            ToolTip, % tooltipMesg
+            AddMessageAndDisplayTooltip("Got in the " . A_ThisHotkey . " section, to submit the form : " . A_INDEX, -5000)
             Sleep, 150
             if (A_INDEX == 19)
             {

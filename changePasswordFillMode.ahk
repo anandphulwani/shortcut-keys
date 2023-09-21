@@ -13,15 +13,13 @@ F1:: ; F1 hotkey.
         {
             longPress := true
             SoundBeep, 1000, 120
-            toolTip2Mesg .= StartTime . ": Long press Activated {" . A_ThisHotkey . "} `r`n"
-            ToolTip, % toolTip2Mesg
+            AddMessageAndDisplayTooltip(StartTime . ": Long press Activated {" . A_ThisHotkey . "}")
         }
         Sleep 5
     }
     If (longPress)
     {
-        toolTip2Mesg .= StartTime . ": Long press Block {" . A_ThisHotkey . "} `r`n"
-        ToolTip, % toolTip2Mesg
+        AddMessageAndDisplayTooltip(StartTime . ": Long press Block {" . A_ThisHotkey . "}")
         Suspend, On
         SendInput, {%A_ThisHotkey%}
         Sleep, 20
@@ -29,7 +27,7 @@ F1:: ; F1 hotkey.
     }
     Else
     {
-        toolTip2Mesg .= StartTime . ": Short press Block {" . A_ThisHotkey . "} `r`n"
+        AddMessageAndDisplayTooltip(StartTime . ": Short press Block {" . A_ThisHotkey . "}")
         if(PasswordAutoFillMode)
         {
             ; Create a GUI for selecting options
@@ -57,13 +55,10 @@ F1:: ; F1 hotkey.
         Else
         {
             PasswordAutoFillMode := !PasswordAutoFillMode
-            toolTip2Mesg .= StartTime . ": Password automatic fill mode set to: " . ( PasswordAutoFillMode ? "Enabled" : "Disabled" ) . "`r`n"
-            ToolTip, % toolTip2Mesg
+            AddMessageAndDisplayTooltip(StartTime . ": Password automatic fill mode set to: " . ( PasswordAutoFillMode ? "Enabled" : "Disabled" ))
         }
     }
-
-    ToolTip, % toolTip2Mesg
-    SetTimer, RemoveToolTip, -5000
+    AddMessageAndDisplayTooltip("", -5000)
 return
 
 #IfWinActive, ahk_group ShortcutKeys_Reenable_Password_Autofillmode_Grp
@@ -87,8 +82,7 @@ return
     Gui 2:Destroy
 
     PasswordAutoFillMode := false
-    toolTip2Mesg .= "Password automatic fill mode set to: " . ( PasswordAutoFillMode ? "Enabled" : "Disabled" ) . " `r`n"
-    ToolTip, % toolTip2Mesg
+    AddMessageAndDisplayTooltip("Password automatic fill mode set to: " . ( PasswordAutoFillMode ? "Enabled" : "Disabled" ))
 
     ; Process the selected option and disable PasswordAutoFillMode
     If (SelectedOption = "1 Minute")
@@ -119,15 +113,17 @@ return
     {
         ; Do Nothing
     }
-    toolTip2Mesg .= "Re-enabling password automatic fill mode in " . SelectedOption . " `r`n"
-    ToolTip, % toolTip2Mesg
-    SetTimer, RemoveToolTip, -5000
+    AddMessageAndDisplayTooltip("Re-enabling password automatic fill mode in " . SelectedOption, -5000)
 Return
 
 ReenablePasswordAutoFill:
+    global toolTip2Mesg, parsedCredentialsJSON
+    toolTip2Mesg := 
+    ToolTip
+
     PasswordAutoFillMode := true
-    ToolTip, % "Password automatic fill mode is now enabled."
+
     SetTimer, ReenablePasswordAutoFill, Off
-    SetTimer, RemoveToolTip, -5000
+    AddMessageAndDisplayTooltip("Password automatic fill mode is now enabled.", -5000)
 return
 #IfWinActive ; turn off context sensitivity for the new hotkey

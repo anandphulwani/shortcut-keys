@@ -12,8 +12,7 @@ fillOnKeyPress(isSlow, additionalModifier)
     WinGetTitle, CurrTitle, A
     Loop, 3
     {
-        toolTip2Mesg .= "Doing entry in " . (3 - (A_INDEX - 1)) . " deci - seconds on " . CurrTitle . "`r`n"
-        ToolTip, % toolTip2Mesg
+        AddMessageAndDisplayTooltip("Doing entry in " . (3 - (A_INDEX - 1)) . " deci - seconds on " . CurrTitle)
         Sleep, % sleepTime
     }
 
@@ -33,6 +32,5 @@ fillOnKeyPress(isSlow, additionalModifier)
         SetKeyDelay, 10, 10
         SetControlDelay, 20
     }
-    toolTip2Mesg .= "Entry done on " . CurrTitle . "`r`n"
-    ToolTip, % toolTip2Mesg
+    AddMessageAndDisplayTooltip("Entry done on " . CurrTitle, -5000)
 }
