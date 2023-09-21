@@ -83,6 +83,8 @@ GetMouseGesture(reset := false)
 {
     Static
     mousegetpos, xpos2, ypos2
+    static xpos1 := xpos2
+    static ypos1 := ypos2
     dx := xpos2 - xpos1
     dy := ypos1 - ypos2
     abs(dy) >= abs(dx) ? (dy > 0 ? (track := "U") : (track := "D")) : (dx > 0 ? (track := "R") : (track := "L"))
@@ -90,7 +92,8 @@ GetMouseGesture(reset := false)
         track := ""
     xpos1 := xpos2
     ypos1 := ypos2
-    If track <> SubStr(gesture, 0, 1)
+    static gesture := ""
+    If track != SubStr(gesture, -1) ; SubStr(gesture, 0, 1)
         gesture := gesture . track
     gesture := (reset ? "" : gesture)
     Return gesture
