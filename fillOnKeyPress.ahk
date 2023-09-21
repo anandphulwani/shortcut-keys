@@ -29,4 +29,7 @@ F8:: ; F8 hotkey.
         toolTip2Mesg .= StartTime . ": Short press Block (" . A_ThisHotkey . ") `r`n"
         fillOnKeyPress(false, additionalModifier)
     }
+
+    ToolTip, % toolTip2Mesg
+    SetTimer, RemoveToolTip, -5000
 return
