@@ -143,3 +143,9 @@ Else
     MsgBox, Neither Credentials.json nor Credentials.json.enc exists. Exiting program.
     ExitApp ; Exit the AutoHotkey script
 }
+
+If ( !parsedCredentialsJSON.haskey("passwords") || !parsedCredentialsJSON.passwords.haskey("password"))
+{
+    MsgBox, Does not contain normal password key or password.password key. Exiting program.
+    ExitApp
+}

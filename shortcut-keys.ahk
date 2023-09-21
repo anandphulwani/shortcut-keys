@@ -19,12 +19,6 @@ SetWorkingDir %A_ScriptDir% ; Ensures a consistent starting directory.
 #Include %A_ScriptDir%\Includes\IncludeVariables.ahk
 #Include %A_ScriptDir%\credentialsEncDecKey.ahk
 
-If ( !parsedCredentialsJSON.haskey("password") || !parsedCredentialsJSON.password.haskey("password"))
-{
-    MsgBox, Does not contain normal password key or password.password key. Exiting program.
-    ExitApp ; Exit the AutoHotkey script
-}
-
 PasswordAutoFillMode := true
 ; WaitForWindowToAppear()
 
