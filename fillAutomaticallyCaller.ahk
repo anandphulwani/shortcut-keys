@@ -9,6 +9,11 @@ ExitFunc(ExitReason, ExitCode)
 
 WinProcCallback(hWinEventHook, event, hwnd, idObject, idChild, dwEventThread, dwmsEventTime) 
 {
+    global PasswordAutoFillMode
+    If (!PasswordAutoFillMode)
+    {
+        Return
+    }
     DetectHiddenWindows, On
     WinGetClass, sClass, ahk_id %hwnd%
     WinGetTitle, sTitle, ahk_id %hwnd%
