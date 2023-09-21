@@ -63,9 +63,9 @@ If ( WindowType == "Radmin security")
         WinMove, % winMoveArr[1], % winMoveArr[2]
     }
 
-    tooltipMesg := "Window Id: " . currWindowId . "`r`n"
-    tooltipMesg .= "Window Title: " . currWindowTitle . "`r`n"
-    tooltipMesg .= "Logging In...." . "`r`n"
+    AddMessageAndDisplayTooltip("Window Id: " . currWindowId)
+    AddMessageAndDisplayTooltip("Window Title: " . currWindowTitle)
+    AddMessageAndDisplayTooltip("Logging In....")
 
     ; stringified := JSON.Dump(windowComponents,, 4)
     ; stringified := StrReplace(stringified, "`n", "`r`n") 
@@ -88,8 +88,7 @@ If ( WindowType == "Radmin security")
             ControlGetText, GetTxtFromBox, % componentId
             If (GetTxtFromBox == componentProperties.Value)
             {
-                tooltipMesg .= "Continuing, as already data set in the " . componentProperties.Label . " (" . componentProperties.Type . ") primary check block, " . componentId . " : " . componentProperties.Value . "`r`n"
-                ToolTip, % tooltipMesg
+                AddMessageAndDisplayTooltip("Continuing, as already data set in the " . componentProperties.Label . " (" . componentProperties.Type . ") primary check block, " . componentId . " : " . componentProperties.Value)
                 continue
             }
         }
@@ -98,23 +97,20 @@ If ( WindowType == "Radmin security")
             ControlGet, isChecked, Checked, , % componentId
             If (isChecked == componentProperties.Value)
             {
-                tooltipMesg .= "Continuing, as already checkbox state set in the " . componentProperties.Label . " (" . componentProperties.Type . ") primary check block, " . componentId . "`r`n"
-                ToolTip, % tooltipMesg
+                AddMessageAndDisplayTooltip("Continuing, as already checkbox state set in the " . componentProperties.Label . " (" . componentProperties.Type . ") primary check block, " . componentId)
                 continue
             }
         }
 
         If (componentProperties.Type == "Textbox" || componentProperties.Type == "Passwordbox")
         {
-            tooltipMesg .= "Got in the " . componentProperties.Label . " (" . componentProperties.Type . ") secondary block, " . componentId . " : " . componentProperties.Value . "`r`n"
-            ToolTip, % tooltipMesg
+            AddMessageAndDisplayTooltip("Got in the " . componentProperties.Label . " (" . componentProperties.Type . ") secondary block, " . componentId . " : " . componentProperties.Value)
             ControlSetText, % componentId, % componentProperties.Value
             Sleep, 10
         } 
         Else If (componentProperties.Type == "Checkbox" || componentProperties.Type == "Button")
         {
-            tooltipMesg .= "Got in the " . componentProperties.Label . " (" . componentProperties.Type . ") secondary block, " . componentId . "`r`n"
-            ToolTip, % tooltipMesg
+            AddMessageAndDisplayTooltip("Got in the " . componentProperties.Label . " (" . componentProperties.Type . ") secondary block, " . componentId)
             ControlClick, % componentId
             Sleep, 10
         }
@@ -124,8 +120,7 @@ If ( WindowType == "Radmin security")
             ControlGetText, GetTxtFromBox, % componentId
             While (componentProperties.Value != GetTxtFromBox && A_INDEX < 20) {
                 ControlSetText, % componentId, % componentProperties.Value
-                tooltipMesg .= "Got in the " . componentProperties.Label . " (" . componentProperties.Type . ") loop, " . componentId . " : " . A_INDEX . "`r`n"
-                ToolTip, % tooltipMesg
+                AddMessageAndDisplayTooltip("Got in the " . componentProperties.Label . " (" . componentProperties.Type . ") loop, " . componentId . " : " . A_INDEX)
                 Sleep, 10
                 ControlGetText, GetTxtFromBox, % componentId
                 if (A_INDEX == 19)
@@ -142,8 +137,7 @@ If ( WindowType == "Radmin security")
             GetLengthFromBox := GetPasswordBoxLength(componentId, currWindowId, conParams.controlLeftPaddingPixel, conParams.perCharacterPixel, conParams.perCharacterLeftPaddingPixel, conParams.perCharacterRightPaddingPixel)
             While (StrLen(componentProperties.Value) != GetLengthFromBox && A_INDEX < 20) {
                 ControlSetText, % componentId, % componentProperties.Value
-                tooltipMesg .= "Got in the " . componentProperties.Label . " (" . componentProperties.Type . ") loop, " . componentId . " : " . A_INDEX . "`r`n"
-                ToolTip, % tooltipMesg 
+                AddMessageAndDisplayTooltip("Got in the " . componentProperties.Label . " (" . componentProperties.Type . ") loop, " . componentId . " : " . A_INDEX)
                 Sleep, 10
                 GetLengthFromBox := GetPasswordBoxLength(componentId, currWindowId, conParams.controlLeftPaddingPixel, conParams.perCharacterPixel, conParams.perCharacterLeftPaddingPixel, conParams.perCharacterRightPaddingPixel)
                 if (A_INDEX == 19)
@@ -160,8 +154,7 @@ If ( WindowType == "Radmin security")
             ControlGet, isChecked, Checked, , % componentId
             While (componentProperties.Value != isChecked && A_INDEX < 20) {
                 ControlClick, % componentId
-                tooltipMesg .= "Got in the " . componentProperties.Label . " (" . componentProperties.Type . ") loop, " . componentId . " : " . A_INDEX . "`r`n"
-                ToolTip, % tooltipMesg
+                AddMessageAndDisplayTooltip("Got in the " . componentProperties.Label . " (" . componentProperties.Type . ") loop, " . componentId . " : " . A_INDEX)
                 Sleep, 10
                 ControlGet, isChecked, Checked, , % componentId
                 if (A_INDEX == 19)
@@ -176,8 +169,7 @@ If ( WindowType == "Radmin security")
         {
             while(componentProperties.WaitForWindowClose && WinExist(A) && A_INDEX < 20) {
                 ControlClick, % componentId
-                tooltipMesg .= "Got in the " . componentProperties.Label . " (" . componentProperties.Type . ") loop, " . componentId . " : " . A_INDEX . "`r`n"
-                ToolTip, % tooltipMesg
+                AddMessageAndDisplayTooltip("Got in the " . componentProperties.Label . " (" . componentProperties.Type . ") loop, " . componentId . " : " . A_INDEX)
                 Sleep, 10
                 if (A_INDEX == 19)
                 {
@@ -188,7 +180,7 @@ If ( WindowType == "Radmin security")
             ComponentsExecuted[componentId] := true
         }
     }
-    ToolTip, % tooltipMesg
+    AddMessageAndDisplayTooltip("", -15000)
     Sleep 15000 ; Just to display the tooltip
 }
 Else If WinExist("asdasdasdasdasdasdasdasdasdasdasdasdasdadsasdasdgfgakjhsdjsadfhkjsdfhjksdgfhjsdgfkjhsadfyedsfsadgflhkjsagdfhjsgdkjfbsdcxv")
@@ -198,3 +190,5 @@ Else If WinExist("asdasdasdasdasdasdasdasdasdasdasdasdasdadsasdasdgfgakjhsdjsadf
     Send, % parsedCredentialsJSON.password.password
     return
 }
+
+#Include %A_ScriptDir%\displayTooltipAndResetByGesture.ahk
