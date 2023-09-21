@@ -122,6 +122,6 @@ ReenablePasswordAutoFill:
     PasswordAutoFillMode := true
 
     SetTimer, ReenablePasswordAutoFill, Off
-    AddMessageAndDisplayTooltip("Password automatic fill mode is now enabled.", -5000)
+    AddMessageAndDisplayTooltip("Password automatic fill mode is now: Enabled.", -5000)
 return
 #IfWinActive ; turn off context sensitivity for the new hotkey
