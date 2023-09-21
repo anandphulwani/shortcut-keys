@@ -68,8 +68,6 @@ return
     Gui, 2:Destroy
     Gui, Destroy
 return
-; ^ENTER::
-; ^NUMPADENTER::
 2okay_pressed:
     global toolTip2Mesg, parsedCredentialsJSON
     ; Gui, Submit, NoHide
