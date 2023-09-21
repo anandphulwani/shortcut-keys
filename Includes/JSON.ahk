@@ -47,7 +47,7 @@ class JSON
             ; Object keys(and array indices) are temporarily stored in arrays so that
             ; we can enumerate them in the order they appear in the document/text instead
             ; of alphabetically. Skip if no reviver function is specified.
-            this.keys := this.rev ? {} : false
+            this.keys := this.rev ? new ScriptingDictionary : false
 
             static quot := Chr(34), bashq := "\" . quot
             , json_value := quot . "{[01234567890-tfn"
@@ -56,7 +56,7 @@ class JSON
 
             key := ""
             is_key := false
-            root := {}
+            root := new ScriptingDictionary
             stack := [root]
             next := json_value
             pos := 0
@@ -87,7 +87,7 @@ class JSON
                             ; sacrifice readability for minor(actually negligible) performance gain
                             (ch == "{")
                             ? ( is_key := true
-                            , value := {}
+                            , value := new ScriptingDictionary
                             , next := object_key_or_object_closing )
                             ; ch == "["
                             : ( value := json_array ? new json_array : []
