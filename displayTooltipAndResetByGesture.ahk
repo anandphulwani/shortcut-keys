@@ -3,7 +3,7 @@
 paramTimeoutToRemoveTooltip :=
 AddMessageAndDisplayTooltip(message, timeoutToRemoveTooltip := false)
 {
-    global paramTimeoutToRemoveTooltip
+    global paramTimeoutToRemoveTooltip, toolTip2Mesg
     If (message != "")
     {
         toolTip2Mesg .= message . "`r`n"
