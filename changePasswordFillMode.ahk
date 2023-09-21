@@ -121,6 +121,7 @@ return
     }
     toolTip2Mesg .= "Re-enabling password automatic fill mode in " . SelectedOption . " `r`n"
     ToolTip, % toolTip2Mesg
+    SetTimer, RemoveToolTip, -5000
 Return
 
 ReenablePasswordAutoFill:
