@@ -61,7 +61,7 @@ If ( WindowType == "Radmin security")
 
     If (parsedCredentialsJSON["autofill"][WindowType][MatchedWindowTypeKey].HasKey("WinMove"))
     {
-        winMove = parsedCredentialsJSON["autofill"][WindowType][MatchedWindowTypeKey]["WinMove"]
+        winMove := parsedCredentialsJSON["autofill"][WindowType][MatchedWindowTypeKey]["WinMove"]
         winMoveArr := StrSplit(winMove, ",")
         WinMove, % winMoveArr[1], % winMoveArr[2]
     }
