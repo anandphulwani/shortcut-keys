@@ -15,8 +15,6 @@
     GroupAdd, ShortcutKeys_Text_To_Send_Grp, ahk_id %Gui1_ID%
 Return
 #IfWinActive, ahk_group ShortcutKeys_Text_To_Send_Grp
-^ENTER::
-^NUMPADENTER::
 okay_pressed:
     Gui 1:+LastFoundExist
     if (!WinExist()) {
