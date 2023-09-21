@@ -3,6 +3,9 @@
 ; SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
 SetWorkingDir %A_ScriptDir% ; Ensures a consistent starting directory.
 
+#Include %A_ScriptDir%\Includes\JSON.ahk
+#Include %A_ScriptDir%\Includes\Crypt.ahk
+
 credentialsFile := ".\credentials.json"
 credentialsFileEnc := ".\credentials.json.enc"
 credentialsEncDecKey := ""
