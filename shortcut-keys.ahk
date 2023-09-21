@@ -32,6 +32,20 @@ toolTip2Mesg :=
 #Include %A_ScriptDir%\changePasswordFillMode.ahk
 #Include %A_ScriptDir%\textToSend.ahk
 
+AddMessageAndDisplayTooltip(message, timeoutToRemoveTooltip := false)
+{
+    If (message != "")
+    {
+        toolTip2Mesg .= message . "`r`n"
+    }
+    ToolTip, % toolTip2Mesg
+
+    If (timeoutToRemoveTooltip != false)
+    {
+        SetTimer, RemoveToolTip, timeoutToRemoveTooltip
+    }
+}
+
 RemoveToolTip:
     SetTimer, RemoveToolTip, Off
     ToolTip
