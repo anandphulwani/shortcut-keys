@@ -23,6 +23,7 @@ PasswordAutoFillMode := true
 ; WaitForWindowToAppear()
 
 #Include %A_ScriptDir%\changePasswordFillMode.ahk
+#Include %A_ScriptDir%\fillAutomaticallyCaller.ahk
 
 #Include %A_ScriptDir%\fillOnKeyPress.ahk
 
