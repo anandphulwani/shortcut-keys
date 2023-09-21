@@ -1,10 +1,10 @@
-+F8:: ; Shift+F8 hotkey.
     PasswordAutoFillMode := !PasswordAutoFillMode
     ToolTip, % "Password automatic fill mode set to: " . ( PasswordAutoFillMode ? "Enabled" : "Disabled" )
     SetTimer, RemoveToolTip, -1500
     if (PasswordAutoFillMode) {
         ; WaitForWindowToAppear()
 #IfWinActive
+F1:: ; F1 hotkey.
     }
 return
 #IfWinActive ; turn off context sensitivity for the new hotkey
