@@ -28,6 +28,7 @@ toolTip2Mesg :=
 
 #Include %A_ScriptDir%\fillOnKeyPress.ahk
 
+#Include %A_ScriptDir%\common_gui_functions.ahk
 #Include %A_ScriptDir%\changePasswordFillMode.ahk
 #Include %A_ScriptDir%\textToSend.ahk
 
