@@ -4,5 +4,7 @@
     SetTimer, RemoveToolTip, -1500
     if (PasswordAutoFillMode) {
         ; WaitForWindowToAppear()
+#IfWinActive
     }
 return
+#IfWinActive ; turn off context sensitivity for the new hotkey
