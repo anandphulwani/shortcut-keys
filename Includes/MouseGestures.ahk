@@ -85,7 +85,7 @@ GetMouseGesture(reset := false)
     mousegetpos, xpos2, ypos2
     dx := xpos2 - xpos1
     dy := ypos1 - ypos2
-    abs(dy) >= abs(dx) ? (dy > 0 ? (track := "u") : (track := "d")) : (dx > 0 ? (track := "r") : (track := "l"))
+    abs(dy) >= abs(dx) ? (dy > 0 ? (track := "U") : (track := "D")) : (dx > 0 ? (track := "R") : (track := "L"))
     If abs(dy) < 4 and abs(dx) < 4
         track := ""
     xpos1 := xpos2
