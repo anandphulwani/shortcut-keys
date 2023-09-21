@@ -285,7 +285,7 @@ class JSON
                                     }
                                 } else {
                                     colon := this.gap ? ": " : ":"
-                                        for k in value {
+                                        for k, dummyVar in value {
                                             v := this.Str(value, k)
                                             if (v != "") {
                                                 if (this.gap)
