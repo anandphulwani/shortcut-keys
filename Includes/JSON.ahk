@@ -16,6 +16,7 @@
  *     Email:      - cocobelgica <at> gmail <dot> com
 */
 
+#Include %A_ScriptDir%\Includes\ScriptingDictionary.ahk
 /**
  * Class: JSON
  *     The JSON object contains methods for parsing JSON and converting values
