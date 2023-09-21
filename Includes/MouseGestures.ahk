@@ -14,7 +14,7 @@
 ;     }
 ;     Else If IsFunc(MG)
 ;     {
-;         %MG%(); example allows creation of gestures by defining functions that comprise U, D, R, L as function name, with no upper limit on the extent of the gesture, i.e UDUDUDUDL for ex.
+;         %MG%() ; example allows creation of gestures by defining functions that comprise U, D, R, L as function name, with no upper limit on the extent of the gesture, i.e UDUDUDUDL for ex.
 ;     }
 ;     ToolTip
 ;     GetMouseGesture(True)
