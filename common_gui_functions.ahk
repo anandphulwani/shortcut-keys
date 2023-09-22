@@ -8,6 +8,19 @@
     If (currentWindowClass == "ahk_class AutoHotkeyGUI" || currentProcessName == "shortcut-keys.exe" 
         || currentProcessName == "AutoHotkey.exe" || currentTitle == "ShortcutKeys-Text To Send" || currentTitle == "Select Re-enable password auto fill mode")
     {
+        while(WinExist("ahk_id " currentWindowId) && A_INDEX < 20) {
+            ControlClick, Button1, % "ahk_id " currentWindowId
+            AddMessageAndDisplayTooltip("Got in the " . A_ThisHotkey . " section, to submit the form : " . A_INDEX, -5000)
+            Sleep, 150
+            if (A_INDEX == 19)
+            {
+                MsgBox, % "Unable to `Button` click `OK` loop, 19 times."
+                ExitApp
+            }
+        }
+    }
+    Else
+    {
         modifierKey := SubStr(A_ThisHotkey, 1, 1)
         if (modifierKey != "^")
         {
@@ -19,18 +32,5 @@
         SendInput, % modifierKey . mainKey
         Sleep, 20
         Suspend, Off
-    }
-    Else
-    {
-        while(WinExist("ahk_id " currentWindowId) && A_INDEX < 20) {
-            ControlClick, Button1, % "ahk_id " currentWindowId
-            AddMessageAndDisplayTooltip("Got in the " . A_ThisHotkey . " section, to submit the form : " . A_INDEX, -5000)
-            Sleep, 150
-            if (A_INDEX == 19)
-            {
-                MsgBox, % "Unable to `Button` click `OK` loop, 19 times."
-                ExitApp
-            }
-        }
     }
 Return
