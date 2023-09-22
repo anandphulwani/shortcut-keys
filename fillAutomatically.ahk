@@ -193,6 +193,6 @@ Else If WinExist("asdasdasdasdasdasdasdasdasdasdasdasdasdadsasdasdgfgakjhsdjsadf
     Send, % parsedCredentialsJSON.password.password
     return
 }
-AddMessageAndDisplayTooltip("", -5000)
+AddMessageAndDisplayTooltip("", -12500)
 
 #Include %A_ScriptDir%\displayTooltipAndResetByGesture.ahk
