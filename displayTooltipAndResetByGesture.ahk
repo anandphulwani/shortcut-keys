@@ -1,6 +1,5 @@
 #Include %A_ScriptDir%\Includes\MouseGestures.ahk
 
-paramTimeoutToRemoveTooltip :=
 AddMessageAndDisplayTooltip(message, timeoutToRemoveTooltip := false)
 {
     global paramTimeoutToRemoveTooltip, toolTip2Mesg
@@ -18,7 +17,6 @@ AddMessageAndDisplayTooltip(message, timeoutToRemoveTooltip := false)
     }
 }
 
-mouseX := mouseY := 0
 CheckForGestureToClearToolTip:
     timeoutToRemoveTooltip := paramTimeoutToRemoveTooltip
     paramTimeoutToRemoveTooltip := 
