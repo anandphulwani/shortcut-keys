@@ -14,6 +14,7 @@ SetKeyDelay, 10, 10
 SetWorkingDir %A_ScriptDir% ; Ensures a consistent starting directory.
 
 #Persistent
+#UseHook, Off ; Switching it to On makes long press non functionaly
 #InstallKeybdHook
 #SingleInstance ignore
 
