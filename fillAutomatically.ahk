@@ -139,12 +139,12 @@ If ( WindowType == "Radmin security")
         Else If (componentProperties.Type == "Passwordbox")
         {
             conParams := componentProperties.ControlParameters
-            GetLengthFromBox := GetPasswordBoxLength(componentId, currWindowId, conParams.controlLeftPaddingPixel, conParams.perCharacterPixel, conParams.perCharacterLeftPaddingPixel, conParams.perCharacterRightPaddingPixel)
+            GetLengthFromBox := GetPasswordBoxLength(componentId, currWindowId, conParams.controlLeftPaddingPixel, conParams.controlBottomPaddingPixel, conParams.perCharacterPixel, conParams.perCharacterLeftPaddingPixel, conParams.perCharacterRightPaddingPixel)
             While (StrLen(componentProperties.Value) != GetLengthFromBox && A_INDEX < 20) {
                 ControlSetText, % componentId, % componentProperties.Value
                 AddMessageAndDisplayTooltip("Got in the " . componentProperties.Label . " (" . componentProperties.Type . ") loop, " . componentId . " : " . A_INDEX)
                 Sleep, 10
-                GetLengthFromBox := GetPasswordBoxLength(componentId, currWindowId, conParams.controlLeftPaddingPixel, conParams.perCharacterPixel, conParams.perCharacterLeftPaddingPixel, conParams.perCharacterRightPaddingPixel)
+                GetLengthFromBox := GetPasswordBoxLength(componentId, currWindowId, conParams.controlLeftPaddingPixel, conParams.controlBottomPaddingPixel, conParams.perCharacterPixel, conParams.perCharacterLeftPaddingPixel, conParams.perCharacterRightPaddingPixel)
                 if (A_INDEX == 19)
                 {
                     MsgBox, % "Unable to `Textbox` set " . componentProperties.Label . " loop, tried setting value '" . componentProperties.Value . "', 19 times."

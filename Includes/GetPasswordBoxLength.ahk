@@ -1,12 +1,12 @@
 #Include %A_ScriptDir%\Includes\Gdip_CustomFunctions.ahk
 
-GetPasswordBoxLength(passwordControl, windowId, controlLeftPaddingPixel, perCharacterPixel , perCharacterLeftPaddingPixel, perCharacterRightPaddingPixel)
+GetPasswordBoxLength(passwordControl, windowId, controlLeftPaddingPixel, controlBottomPaddingPixel, perCharacterPixel , perCharacterLeftPaddingPixel, perCharacterRightPaddingPixel)
 {
     backgroundColorOfControl := GetBackgroundColorOfControl(passwordControl, windowId)
     ControlGetPos, ControlX, ControlY, ControlWidth, ControlHeight, %passwordControl%, ahk_id %windowId%
 
     CenterX := ControlX + ControlWidth / 2
-    CenterY := ControlHeight / 2
+    CenterY := (ControlHeight - controlBottomPaddingPixel)/ 2
 
     bitmapFromControl := GdipCF_createBitmapBasedOnMode("component", windowId, passwordControl)
     lengthOfPassword := 0
