@@ -1,5 +1,3 @@
-#Include %A_ScriptDir%\Includes\MouseGestures.ahk
-
 AddMessageAndDisplayTooltip(message, timeoutToRemoveTooltip := false)
 {
     global paramTimeoutToRemoveTooltip, toolTip2Mesg
