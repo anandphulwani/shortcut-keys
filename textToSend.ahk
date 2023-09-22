@@ -26,6 +26,7 @@ okay_pressed:
     Gui 1:Submit
     Gui 1:Destroy
     CurrentKeyDelay := A_KeyDelay
+    CurrentKeyDuration := A_KeyDuration
     SetKeyDelay, 30
     SendEvent, {Raw}%input%
     SetKeyDelay, %CurrentKeyDelay%
