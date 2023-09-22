@@ -156,7 +156,6 @@ If ( WindowType == "Radmin security")
         }
         Else If (componentProperties.Type == "Checkbox")
         {
-            Sleep 5000
             ControlGet, isChecked, Checked, , % componentId
             While (componentProperties.Value != isChecked && A_INDEX < 20) {
                 ControlClick, % componentId
