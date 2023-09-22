@@ -17,7 +17,6 @@ AddMessageAndDisplayTooltip(message, timeoutToRemoveTooltip := false)
         SetTimer, CheckForGestureToClearToolTip, -1
     }
 }
-return
 
 mouseX := mouseY := 0
 CheckForGestureToClearToolTip:
