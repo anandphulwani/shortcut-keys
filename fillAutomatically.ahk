@@ -186,8 +186,6 @@ If ( WindowType == "Radmin security")
             ComponentsExecuted[componentId] := true
         }
     }
-    AddMessageAndDisplayTooltip("", -15000)
-    Sleep 15000 ; Just to display the tooltip
 }
 Else If WinExist("asdasdasdasdasdasdasdasdasdasdasdasdasdadsasdasdgfgakjhsdjsadfhkjsdfhjksdgfhjsdgfkjhsadfyedsfsadgflhkjsagdfhjsgdkjfbsdcxv")
 {
@@ -196,5 +194,6 @@ Else If WinExist("asdasdasdasdasdasdasdasdasdasdasdasdasdadsasdasdgfgakjhsdjsadf
     Send, % parsedCredentialsJSON.password.password
     return
 }
+AddMessageAndDisplayTooltip("", -5000)
 
 #Include %A_ScriptDir%\displayTooltipAndResetByGesture.ahk
