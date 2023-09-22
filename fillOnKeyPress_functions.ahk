@@ -20,7 +20,7 @@ fillOnKeyPress(isSlow, additionalModifier)
     If (mode == "send")
     {
         passwordToSend := parsedCredentialsJSON["passwords"]["password" . (additionalModifier != "" ? "_" . additionalModifier: "")]
-        Send, % passwordToSend
+        Send, {Blind}{Text}%passwordToSend%
         AddMessageAndDisplayTooltip("Password sent is: " . passwordToSend)
     }
     Else If (mode == "controlsend")
