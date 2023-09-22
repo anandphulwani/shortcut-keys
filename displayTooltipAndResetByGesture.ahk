@@ -47,6 +47,10 @@ CheckForGestureToClearToolTip:
         If (InStr(currGesture, "LRL") || InStr(currGesture, "RLR"))
         {
             ToolTip
+            If (InStr(A_ScriptName, "fillAutomatically"))
+            {
+                ExitApp
+            }
             Break
         }
     }
