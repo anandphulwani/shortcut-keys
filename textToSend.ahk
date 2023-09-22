@@ -27,9 +27,9 @@ okay_pressed:
     Gui 1:Destroy
     CurrentKeyDelay := A_KeyDelay
     CurrentKeyDuration := A_KeyDuration
-    SetKeyDelay, 30
+    SetKeyDelay, 30, 10
     SendEvent, {Raw}%input%
-    SetKeyDelay, %CurrentKeyDelay%
+    SetKeyDelay, %CurrentKeyDelay%, %CurrentKeyDuration%
     AddMessageAndDisplayTooltip("Entering data:" . input, -5000)
 Return
 ButtonCancel:
