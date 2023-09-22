@@ -42,10 +42,7 @@ CheckForGestureToClearToolTip:
         If (InStr(currGesture, "LRL") || InStr(currGesture, "RLR"))
         {
             ToolTip, Tooltip Cleared
-            Else
-            {
-                SetTimer, RemoveToolTip, -500
-            }
+            SetTimer, RemoveToolTip, -500
             Break
         }
     }
