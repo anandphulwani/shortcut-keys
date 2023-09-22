@@ -14,6 +14,7 @@ AddMessageAndDisplayTooltip(message, timeoutToRemoveTooltip := false)
         SetTimer, CheckForGestureToClearToolTip, -1
     }
 }
+Return
 
 CheckForGestureToClearToolTip:
     timeoutToRemoveTooltip := paramTimeoutToRemoveTooltip
