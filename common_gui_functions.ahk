@@ -10,7 +10,7 @@
     {
         while(WinExist("ahk_id " currentWindowId) && A_INDEX < 20) {
             ControlClick, Button1, % "ahk_id " currentWindowId
-            AddMessageAndDisplayTooltip("Got in the " . A_ThisHotkey . " section, to submit the form : " . A_INDEX, -5000)
+            AddMessageAndDisplayTooltip("Got in the " . A_ThisHotkey . " section, to submit the form : " . A_INDEX)
             Sleep, 150
             if (A_INDEX == 19)
             {
@@ -33,4 +33,5 @@
         Sleep, 20
         Suspend, Off
     }
+    AddMessageAndDisplayTooltip("", -5000)
 Return
