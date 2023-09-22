@@ -2,6 +2,7 @@ fillOnKeyPress(isSlow, additionalModifier)
 {
     global toolTip2Mesg, parsedCredentialsJSON
     sleepTime := 20
+    SetKeyDelay, 10, 10
     if(isSlow)
     {
         ; Increase the delay
