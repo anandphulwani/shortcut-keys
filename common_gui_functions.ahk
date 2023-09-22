@@ -2,8 +2,11 @@
 ^NUMPADENTER::
     global toolTip2Mesg, parsedCredentialsJSON
     WinGet, currentWindowId, ID, A
+    WinGetClass, currentWindowClass, A
     WinGet, currentProcessName, ProcessName, A
-    If (currentProcessName != "AutoHotkey.exe")
+    WinGetActiveTitle, currentTitle
+    If (currentWindowClass == "ahk_class AutoHotkeyGUI" || currentProcessName == "shortcut-keys.exe" 
+        || currentProcessName == "AutoHotkey.exe" || currentTitle == "ShortcutKeys-Text To Send" || currentTitle == "Select Re-enable password auto fill mode")
     {
         modifierKey := SubStr(A_ThisHotkey, 1, 1)
         if (modifierKey != "^")
