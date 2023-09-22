@@ -27,7 +27,7 @@ okay_pressed:
     Gui 1:Destroy
     CurrentKeyDelay := A_KeyDelay
     CurrentKeyDuration := A_KeyDuration
-    SetKeyDelay, 30, 10
+    SetKeyDelay, 30, 30
     BlockInput, On
     Send, {Blind}{Text}%input%
     BlockInput, Off
