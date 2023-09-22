@@ -154,3 +154,37 @@ If ( !parsedCredentialsJSON.haskey("passwords") || !parsedCredentialsJSON.passwo
 ; stringified := JSON.Dump(windowComponents,, 4)
 ; stringified := StrReplace(stringified, "`n", "`r`n") 
 ; Tooltip, % stringified
+
+decodeEncryptedJSONToFile()
+{
+    global hashOfcredentialsEncDecKey, credentialsFile, credentialsFileEnc
+    InputBox, enteredPassword, Enter Password, Please enter password to encrypt/decrypt credentials.json:, hide
+    If ErrorLevel
+    {
+        MsgBox, You canceled or closed the input box.
+        Return
+    }
+    Else
+    {
+        hash := Crypt.Hash.StrHash(enteredPassword, 4) ; hashes string using SHA_256 algorithm
+        If (hash == hashOfcredentialsEncDecKey)
+        {
+            credentialsEncDecKey := enteredPassword
+            FileRead, CredentialsEncContent, %credentialsFileEnc%
+            decryptedCredentials := Crypt.Encrypt.StrDecrypt(CredentialsEncContent, credentialsEncDecKey, 1, 4)
+            If (decryptedCredentials == 0)
+            {
+                MsgBox, Unable to decrypt credentials.json.enc file
+                Return
+            }
+            FileDelete, % credentialsFile
+            FileAppend, % decryptedCredentials, % credentialsFile
+            MsgBox, credentials.json generated successfully.
+        }
+        Else
+        {
+            MsgBox, Incorrect password.
+            Return
+        }
+    }
+}
