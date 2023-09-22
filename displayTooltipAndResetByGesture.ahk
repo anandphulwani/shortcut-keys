@@ -41,10 +41,15 @@ CheckForGestureToClearToolTip:
 
         If (InStr(currGesture, "LRL") || InStr(currGesture, "RLR"))
         {
-            ToolTip
+            ToolTip, Tooltip Cleared
             If (InStr(A_ScriptName, "fillAutomatically"))
             {
+                Sleep, 500
                 ExitApp
+            }
+            Else
+            {
+                SetTimer, RemoveToolTip, -500
             }
             Break
         }
