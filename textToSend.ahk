@@ -1,5 +1,8 @@
 ^F8:: ; Ctrl+F8 hotkey.
     global toolTip2Mesg, parsedCredentialsJSON
+    toolTip2Mesg := 
+    ToolTip
+
     if WinExist("ahk_group ShortcutKeys_Text_To_Send_Grp")
     {
         WinActivate
@@ -26,6 +29,7 @@ okay_pressed:
     SetKeyDelay, 30
     SendEvent, {Raw}%input%
     SetKeyDelay, %CurrentKeyDelay%
+    AddMessageAndDisplayTooltip("Entering data:" . input, -5000)
 Return
 ButtonCancel:
 GuiEscape:
