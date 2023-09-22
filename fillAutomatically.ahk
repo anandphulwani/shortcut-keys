@@ -17,6 +17,7 @@ If (A_Args.Length() != 2)
 }
 
 #Include %A_ScriptDir%\Includes\IncludeVariables.ahk
+#Include %A_ScriptDir%\Includes\MouseGestures.ahk
 #Include %A_ScriptDir%\Includes\GetPasswordBoxLength.ahk
 #Include %A_ScriptDir%\credentialsEncDecKey.ahk
 
