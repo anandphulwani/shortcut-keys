@@ -17,10 +17,10 @@ SetWorkingDir %A_ScriptDir% ; Ensures a consistent starting directory.
 #InstallKeybdHook
 #SingleInstance ignore
 
-#Include %A_ScriptDir%\customTrayMenu_Options.ahk
 #Include %A_ScriptDir%\Includes\IncludeVariables.ahk
 #Include %A_ScriptDir%\Includes\MouseGestures.ahk
 #Include %A_ScriptDir%\credentialsEncDecKey.ahk
+#Include %A_ScriptDir%\customTrayMenu_Options.ahk
 
 PasswordAutoFillMode := true
 toolTip2Mesg := 
