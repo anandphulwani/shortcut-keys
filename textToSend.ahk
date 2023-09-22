@@ -28,7 +28,7 @@ okay_pressed:
     CurrentKeyDelay := A_KeyDelay
     CurrentKeyDuration := A_KeyDuration
     SetKeyDelay, 30, 10
-    SendEvent, {Raw}%input%
+    Send, {Blind}{Text}%input%
     SetKeyDelay, %CurrentKeyDelay%, %CurrentKeyDuration%
     AddMessageAndDisplayTooltip("Entering data:" . input, -5000)
 Return
