@@ -9,13 +9,13 @@ F8:: ; F8 hotkey.
     mainKey := A_ThisHotkey
     If (InStr(A_ThisHotkey, "+") == 1)
     {
-        AddMessageAndDisplayTooltip("Shift modifier is activated.")
+        toolTip2Mesg .= "Shift modifier is activated." . "`r`n"
         additionalModifier := "Shift"
         mainKey := SubStr(mainKey, 2)
     }
     Else If (InStr(A_ThisHotkey, "!") == 1)
     {
-        AddMessageAndDisplayTooltip("Alt modifier is activated.")
+        toolTip2Mesg .= "Alt modifier is activated." . "`r`n"
         additionalModifier := "Alt"
         mainKey := SubStr(mainKey, 2)
     }
