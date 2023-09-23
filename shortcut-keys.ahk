@@ -34,7 +34,13 @@ mouseX := mouseY := 0
 #Include %A_ScriptDir%\fillAutomaticallyCaller.ahk
 #Include %A_ScriptDir%\fillOnKeyPress_functions.ahk
 
+;
+;
+;
 ; From here On all those blocks which are subroutine and end with Return or are functions
+;
+;
+;
 
 #Include %A_ScriptDir%\fillOnKeyPress.ahk
 
