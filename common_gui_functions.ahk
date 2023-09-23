@@ -2,14 +2,18 @@
 ^NUMPADENTER::
     global toolTip2Mesg, parsedCredentialsJSON
     WinGet, currentWindowId, ID, A
-    WinGetClass, currentWindowClass, A
-    WinGet, currentProcessName, ProcessName, A
     WinGetActiveTitle, currentTitle
-    If (currentWindowClass == "ahk_class AutoHotkeyGUI" || currentProcessName == "shortcut-keys.exe" 
-        || currentProcessName == "AutoHotkey.exe" || currentTitle == "ShortcutKeys-Text To Send" || currentTitle == "Select Re-enable password auto fill mode")
+    If (currentTitle == "ShortcutKeys-Text To Send" || currentTitle == "Select Re-enable password auto fill mode")
     {
-        while(WinExist("ahk_id " currentWindowId) && A_INDEX < 20) {
-            ControlClick, Button1, % "ahk_id " currentWindowId
+        while((WinExist("ShortcutKeys-Text To Send") || WinExist("Select Re-enable password auto fill mode")) && A_INDEX < 20) {
+            If(WinExist("ShortcutKeys-Text To Send"))
+            {
+                ControlClick, Button1, % "ShortcutKeys-Text To Send"
+            }
+            Else If(WinExist("Select Re-enable password auto fill mode"))
+            {
+                ControlClick, Button1, % "Select Re-enable password auto fill mode"
+            }
             AddMessageAndDisplayTooltip("Got in the " . A_ThisHotkey . " section, to submit the form : " . A_INDEX)
             Sleep, 150
             if (A_INDEX == 19)
