@@ -25,6 +25,17 @@ okay_pressed:
     }
     Gui 1:Submit
     Gui 1:Destroy
+
+    isMessageAdded := false
+    while (GetKeyState("Ctrl") || GetKeyState("Shift"))
+    {
+        If (!isMessageAdded)
+        {
+            isMessageAdded := true
+            AddMessageAndDisplayTooltip(StartTime . ": Waiting for Shift/Ctrl key to be released.....")
+        }
+        Sleep 5
+    }
     CurrentKeyDelay := A_KeyDelay
     CurrentKeyDuration := A_KeyDuration
     SetKeyDelay, 30, 30
