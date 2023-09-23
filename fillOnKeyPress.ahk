@@ -22,9 +22,9 @@ F8:: ; F8 hotkey.
     StartTime := A_TickCount
     longPress := false
 
-    while (GetKeyState(mainKey) && (additionalModifier == "" || GetKeyState(additionalModifier)))
+    while (GetKeyState(mainKey) || (additionalModifier != "" && GetKeyState(additionalModifier)))
     {
-        if (A_TickCount - StartTime >= 200 && !longPress)
+        if (A_TickCount - StartTime >= 400 && !longPress)
         {
             longPress := true
             SoundBeep, 1000, 120
