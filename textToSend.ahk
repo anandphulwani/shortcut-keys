@@ -39,7 +39,7 @@ okay_pressed:
 
     WinGet, currentWindowId, ID, A
     WinGetActiveTitle, currentTitle
-    AddMessageAndDisplayTooltip("Current title:" . currentTitle . "Current Id:" . currentWindowId)
+    AddMessageAndDisplayTooltip("Current title:" . currentTitle . ", Current Id:" . currentWindowId)
     CurrentKeyDelay := A_KeyDelay
     CurrentKeyDuration := A_KeyDuration
     SetKeyDelay, 30, 30
