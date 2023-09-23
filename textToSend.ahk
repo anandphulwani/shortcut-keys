@@ -43,9 +43,9 @@ okay_pressed:
     CurrentKeyDelay := A_KeyDelay
     CurrentKeyDuration := A_KeyDuration
     SetKeyDelay, 30, 30
-    BlockInput, On
+    ; BlockInput, On
     Send, {Blind}{Text}%input%
-    BlockInput, Off
+    ; BlockInput, Off
     SetKeyDelay, %CurrentKeyDelay%, %CurrentKeyDuration%
     AddMessageAndDisplayTooltip("Entering data:" . input, -5000)
 Return
