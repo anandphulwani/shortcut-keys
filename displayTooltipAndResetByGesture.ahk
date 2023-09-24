@@ -1,3 +1,18 @@
+GetMouseCoordsForTooltip()
+{
+    global toolTip2Mesg
+    MouseGetPos, MouseTooltipX, MouseTooltipY
+    If (InStr(A_ScriptName, "fillAutomatically."))
+    {
+        MouseTooltipY -= 500
+    }
+    Else If (InStr(A_ScriptName, "keyboardBlockerOnFocus."))
+    {
+        MouseTooltipX -= 220
+    }
+    return [MouseTooltipX, MouseTooltipY]
+}
+
 AddMessageAndDisplayTooltip(message, timeoutToRemoveTooltip := false)
 {
     global paramTimeoutToRemoveTooltip, toolTip2Mesg
@@ -5,7 +20,8 @@ AddMessageAndDisplayTooltip(message, timeoutToRemoveTooltip := false)
     {
         toolTip2Mesg .= message . "`r`n"
     }
-    ToolTip, % toolTip2Mesg
+    coordsOfTooltip := GetMouseCoordsForTooltip()
+    ToolTip, % toolTip2Mesg, coordsOfTooltip[1], coordsOfTooltip[2]
 
     If (timeoutToRemoveTooltip != false)
     {
@@ -42,7 +58,8 @@ CheckForGestureToClearToolTip:
 
         If (InStr(currGesture, "LRL") || InStr(currGesture, "RLR"))
         {
-            ToolTip, Tooltip Cleared
+            coordsOfTooltip := GetMouseCoordsForTooltip()
+            ToolTip, Tooltip Cleared, coordsOfTooltip[1], coordsOfTooltip[2]
             SetTimer, RemoveToolTip, -500
             Break
         }
