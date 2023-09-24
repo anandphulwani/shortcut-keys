@@ -22,14 +22,14 @@ F8:: ; F8 hotkey.
     StartTime := A_TickCount
     longPress := false
 
-    while (GetKeyState(mainKey) || (additionalModifier != "" && GetKeyState(additionalModifier)))
+    while (GetKeyState(mainKey)) ; || (additionalModifier != "" && GetKeyState(additionalModifier)))
     {
         if (A_TickCount - StartTime >= 1000 && !longPress)
         {
             longPress := true
             SoundBeep, 1000, 120
             AddMessageAndDisplayTooltip(StartTime . ": Long press Activated (" . A_ThisHotkey . ")")
-            AddMessageAndDisplayTooltip(StartTime . ": Waiting for key to be released.....")
+            ; AddMessageAndDisplayTooltip(StartTime . ": Waiting for key to be released.....")
         }
         Sleep 5
     }
