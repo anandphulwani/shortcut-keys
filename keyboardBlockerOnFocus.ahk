@@ -24,7 +24,7 @@ If (A_Args.Length() != 1)
 }
 
 paramWindowId := A_Args[1]
-WinGetTitle, currWindowTitle, ahk_id %paramWindowId%
+; WinGetTitle, currWindowTitle, ahk_id %paramWindowId%
 
 BlockKeyboardInputs(state = "Off")
 {
