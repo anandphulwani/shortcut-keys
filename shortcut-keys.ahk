@@ -25,9 +25,9 @@ DetectHiddenWindows, On
 #Include %A_ScriptDir%\customTrayMenu_Options.ahk
 
 PasswordAutoFillMode := true
-toolTip2Mesg := 
 
 ; Variables required for `displayTooltipAndResetByGesture.ahk` : Start
+toolTip2Mesg := 
 paramTimeoutToRemoveTooltip :=
 mouseX := mouseY := 0
 ; Variables required for `displayTooltipAndResetByGesture.ahk` : End
