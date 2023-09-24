@@ -18,18 +18,18 @@ fillOnKeyPress(isSlow, additionalModifier)
     }
 
     mode := "send"
+    passwordToSend := parsedCredentialsJSON["passwords"]["password" . (additionalModifier != "" ? "_" . additionalModifier: "")]
     If (mode == "send")
     {
-        passwordToSend := parsedCredentialsJSON["passwords"]["password" . (additionalModifier != "" ? "_" . additionalModifier: "")]
         BlockInput, On
         Send, {Blind}{Text}%passwordToSend%
         BlockInput, Off
-        AddMessageAndDisplayTooltip("Password sent is: " . passwordToSend)
     }
     Else If (mode == "controlsend")
     {
         ; ControlSend, ahk_parent, % parsedCredentialsJSON.password.password, A
     }
+    AddMessageAndDisplayTooltip("Password sent is: " . passwordToSend)
 
     if(isSlow)
     {
