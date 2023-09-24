@@ -12,6 +12,7 @@ SetTitleMatchMode, 1
 ; SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
 SetKeyDelay, 10, 10
 SetWorkingDir %A_ScriptDir% ; Ensures a consistent starting directory.
+DetectHiddenWindows, On
 
 #Persistent
 #UseHook, Off ; Switching it to On makes long press non functionaly
