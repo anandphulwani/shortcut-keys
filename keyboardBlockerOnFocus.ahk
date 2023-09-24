@@ -77,19 +77,20 @@ currentKeyboardBlockMode := false
 ShellMessage( wParam, lParam )
 {
     global paramWindowId, currentKeyboardBlockMode, tooltipMesg
-    changeKeyboardBlockModeTo :=
-    If (paramWindowId == lParam && (wParam == 1 || wParam == 4 || wParam == 17 || wParam == 32772)) ; HSHELL_WINDOWACTIVATED Or HSHELL_RUDEAPPACTIVATED
+    WinGet, currentActiveWindowId, ID , A
+    changeKeyboardBlockModeTo := ""
+    If (paramWindowId == lParam && paramWindowId == currentActiveWindowId && (wParam == 1 || wParam == 4 || wParam == 17 || wParam == 32772)) ; HSHELL_WINDOWACTIVATED Or HSHELL_RUDEAPPACTIVATED
     {
         changeKeyboardBlockModeTo := true
         WinGetClass, sClass, ahk_id %lParam%
         WinGetTitle, sTitle, ahk_id %lParam%
-        AddMessageAndDisplayTooltip("Event: " . wParam . ", Title: " . sTitle)
+        AddMessageAndDisplayTooltip("Event: " . wParam . ", Title: " . sTitle ", ")
     }
-    Else
+    Else If (paramWindowId != currentActiveWindowId)
     {
         changeKeyboardBlockModeTo := false
     }
-    If (currentKeyboardBlockMode != changeKeyboardBlockModeTo)
+    If (changeKeyboardBlockModeTo != "" && currentKeyboardBlockMode != changeKeyboardBlockModeTo)
     {
         changeKeyboardBlockModeTo ? BlockKeyboardInputs("On") : BlockKeyboardInputs("Off")
         AddMessageAndDisplayTooltip("Changing keyboard block mode to: " . changeKeyboardBlockModeTo)
