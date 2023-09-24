@@ -29,6 +29,7 @@ F8:: ; F8 hotkey.
             longPress := true
             SoundBeep, 1000, 120
             AddMessageAndDisplayTooltip(StartTime . ": Long press Activated (" . A_ThisHotkey . ")")
+            AddMessageAndDisplayTooltip(StartTime . ": Waiting for key to be released.....")
         }
         Sleep 5
     }
