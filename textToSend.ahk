@@ -1,63 +1,13 @@
 ^F8:: ; Ctrl+F8 hotkey.
-    global toolTip2Mesg, parsedCredentialsJSON
-    toolTip2Mesg := 
-    ToolTip
-
-    if WinExist("ahk_group ShortcutKeys_Text_To_Send_Grp")
+    if WinExist("ShortcutKeys-Text To Send")
     {
         WinActivate
         return
     }
-    Gui, 1:Add, Text, vMyText, Please enter commands to send (Use Ctl+Enter To Submit):
-    Gui, 1:Add, Edit, w600 h150 vinput
-    Gui, 1:Add, Button, gokay_pressed X150 Y180 w150, OK
-    Gui, 1:Add, Button, cancel X+20 YP+0 w150, Cancel
-    Gui, 1:Show, Center autosize, ShortcutKeys-Text To Send
-    Gui, 1:+LastFound
-    Gui1_ID := WinExist()
-    GroupAdd, ShortcutKeys_Text_To_Send_Grp, ahk_id %Gui1_ID%
-Return
-#IfWinActive, ahk_group ShortcutKeys_Text_To_Send_Grp
-okay_pressed:
-    Gui 1:+LastFoundExist
-    if (!WinExist()) {
-        return
-    }
-    Gui 1:Submit
-    Gui 1:Destroy
-
-    isMessageAdded := false
-    while (GetKeyState("Ctrl") || GetKeyState("Shift"))
-    {
-        If (!isMessageAdded)
-        {
-            isMessageAdded := true
-            AddMessageAndDisplayTooltip(StartTime . ": Waiting for Shift/Ctrl key to be released.....")
-        }
-        Sleep 5
-    }
-
     WinGet, currentWindowId, ID, A
-    WinGetActiveTitle, currentTitle
-    AddMessageAndDisplayTooltip("Current title:" . currentTitle . ", Current Id:" . currentWindowId)
-    CurrentKeyDelay := A_KeyDelay
-    CurrentKeyDuration := A_KeyDuration
-    SetKeyDelay, 30, 30
+    toolTip2Mesg := 
+    ToolTip
 
-    Run, %A_ScriptDir%\keyboardBlockerOnFocus.exe %currentWindowId%, , , keyboardBlockerOnFocusPID
-    ; BlockInput, On
-    ; Send, {Blind}{Text}%input%
-    ControlSendRaw,, %input%, ahk_id %currentWindowId%
-    ; BlockInput, Off
-
-    PostMessage, 8192, , , , ahk_pid %keyboardBlockerOnFocusPID%
-    SetKeyDelay, %CurrentKeyDelay%, %CurrentKeyDuration%
-    AddMessageAndDisplayTooltip("Entering data:" . input, -5000)
+    Run, %A_ScriptDir%\CtrlF8.exe %currentWindowId%
+    AddMessageAndDisplayTooltip("", -5000)
 Return
-ButtonCancel:
-GuiEscape:
-GuiClose:
-    Gui, 1:Destroy
-    Gui, Destroy
-return
-#IfWinActive ; turn off context sensitivity
