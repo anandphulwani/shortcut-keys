@@ -1,6 +1,7 @@
 F8:: ; F8 hotkey.
 +F8:: ; Shift + F8 hotkey.
 !F8:: ; Alt + F8 hotkey.
+    WinGet, currentWindowId, ID, A
     toolTip2Mesg := 
     ToolTip
 
@@ -32,14 +33,5 @@ F8:: ; F8 hotkey.
         }
         Sleep 5
     }
-    If (longPress)
-    {
-        AddMessageAndDisplayTooltip(StartTime . ": Long press Block (" . A_ThisHotkey . ")")
-        fillOnKeyPress(true, additionalModifier)
-    }
-    Else
-    {
-        AddMessageAndDisplayTooltip(StartTime . ": Short press Block (" . A_ThisHotkey . ")")
-        fillOnKeyPress(false, additionalModifier)
-    }
+    Run, %A_ScriptDir%\F8ShiftF8AltF8.exe %currentWindowId% %longPress% %additionalModifier%
 return
