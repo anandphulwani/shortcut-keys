@@ -44,13 +44,13 @@ okay_pressed:
     CurrentKeyDuration := A_KeyDuration
     SetKeyDelay, 30, 30
 
-    Run, %A_ScriptDir%\keyboardBlockerOnFocus.exe %currentWindowId%
+    Run, %A_ScriptDir%\keyboardBlockerOnFocus.exe %currentWindowId%, , , keyboardBlockerOnFocusPID
     ; BlockInput, On
     ; Send, {Blind}{Text}%input%
     ControlSendRaw,, %input%, ahk_id %currentWindowId%
     ; BlockInput, Off
 
-    PostMessage, 8192, , , , ahk_exe keyboardBlockerOnFocus.exe
+    PostMessage, 8192, , , , ahk_pid %keyboardBlockerOnFocusPID%
     SetKeyDelay, %CurrentKeyDelay%, %CurrentKeyDuration%
     AddMessageAndDisplayTooltip("Entering data:" . input, -5000)
 Return
