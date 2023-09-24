@@ -8,7 +8,6 @@ fillOnKeyPress(isSlow, additionalModifier, currentWindowId)
         ; Increase the delay
         sleepTime := 100
         SetKeyDelay, 100, 50
-        SetControlDelay, 250
     }
     WinGetTitle, CurrTitle, A
     Loop, 3
@@ -52,7 +51,6 @@ fillOnKeyPress(isSlow, additionalModifier, currentWindowId)
     {
         ; Bring back to normal
         SetKeyDelay, 10, 10
-        SetControlDelay, 20
     }
     AddMessageAndDisplayTooltip("Entry done on " . CurrTitle, -5000)
 }
