@@ -17,8 +17,8 @@ fillOnKeyPress(isSlow, additionalModifier, currentWindowId)
         Sleep, % sleepTime
     }
 
-    mode := "send"
     passwordToSend := parsedCredentialsJSON["passwords"]["password" . (additionalModifier != "" ? "_" . additionalModifier: "")]
+    mode := "controlsend"
     If (mode == "send")
     {
         BlockInput, On
