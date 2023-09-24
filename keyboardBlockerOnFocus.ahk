@@ -7,6 +7,12 @@
 SetWorkingDir %A_ScriptDir% ; Ensures a consistent starting directory.
 SetTitleMatchMode, 1
 
+; Variables required for `displayTooltipAndResetByGesture.ahk` : Start
+toolTip2Mesg := 
+paramTimeoutToRemoveTooltip :=
+mouseX := mouseY := 0
+; Variables required for `displayTooltipAndResetByGesture.ahk` : End
+
 If (A_Args.Length() != 1)
 {
     MsgBox, % "Incorrect length of arguments ( WindowId ) sent to the script, Args length is " . A_Args.Length() . "."
@@ -87,3 +93,7 @@ ShellMessage( wParam, lParam )
     }
     Tooltip, % tooltipMesg
 }
+
+#Include %A_ScriptDir%\Includes\IncludeVariables.ahk
+#Include %A_ScriptDir%\Includes\MouseGestures.ahk
+#Include %A_ScriptDir%\displayTooltipAndResetByGesture.ahk
