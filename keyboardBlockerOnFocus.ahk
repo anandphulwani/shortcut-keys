@@ -63,10 +63,10 @@ Return
 MessageMon(wParam, lParam, msg, hwnd)
 {
     BlockKeyboardInputs("Off")
+    AddMessageAndDisplayTooltip("Exiting keyboardBlockerOnFocus.exe", -10000)
     ExitApp
 }
 
-tooltipMesg :=
 currentKeyboardBlockMode := false
 ShellMessage( wParam, lParam )
 {
@@ -77,8 +77,7 @@ ShellMessage( wParam, lParam )
         changeKeyboardBlockModeTo := true
         WinGetClass, sClass, ahk_id %lParam%
         WinGetTitle, sTitle, ahk_id %lParam%
-        ; tooltipMesg .= "Event: " . wParam . " : " . sTitle . "`r`n"
-        ; Tooltip, % tooltipMesg
+        AddMessageAndDisplayTooltip("Event: " . wParam . ", Title: " . sTitle)
     }
     Else
     {
@@ -87,11 +86,9 @@ ShellMessage( wParam, lParam )
     If (currentKeyboardBlockMode != changeKeyboardBlockModeTo)
     {
         changeKeyboardBlockModeTo ? BlockKeyboardInputs("On") : BlockKeyboardInputs("Off")
-        ; tooltipMesg .= " Changing keyboard block mode to: " . changeKeyboardBlockModeTo . "`r`n"
-        ; Tooltip, % tooltipMesg
+        AddMessageAndDisplayTooltip("Changing keyboard block mode to: " . changeKeyboardBlockModeTo)
         currentKeyboardBlockMode := changeKeyboardBlockModeTo
     }
-    Tooltip, % tooltipMesg
 }
 
 #Include %A_ScriptDir%\Includes\IncludeVariables.ahk
