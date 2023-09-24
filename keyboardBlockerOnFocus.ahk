@@ -66,6 +66,10 @@ MessageMon(wParam, lParam, msg, hwnd)
     OnMessage( MsgNum, "" )
     BlockKeyboardInputs("Off")
     AddMessageAndDisplayTooltip("Exiting keyboardBlockerOnFocus.exe", -10000)
+    Loop, 200
+    {
+        Sleep, 50
+    }
     ExitApp
 }
 
