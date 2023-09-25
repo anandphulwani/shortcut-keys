@@ -99,7 +99,7 @@ MessageMon(wParam, lParam, msg, hwnd)
 currentKeyboardBlockMode := false
 ShellMessage( wParam, lParam )
 {
-    global paramWindowId, currentKeyboardBlockMode, tooltipMesg
+    global paramWindowId, tooltipMesg
     WinGet, currentActiveWindowId, ID , A
     If (paramWindowId == lParam && paramWindowId == currentActiveWindowId && (wParam == 1 || wParam == 4 || wParam == 17 || wParam == 32772)) ; HSHELL_WINDOWACTIVATED Or HSHELL_RUDEAPPACTIVATED
     {
