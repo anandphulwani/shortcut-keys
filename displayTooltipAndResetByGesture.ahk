@@ -2,7 +2,7 @@ GetMouseCoordsForTooltip()
 {
     global toolTip2Mesg
     MouseGetPos, MouseTooltipX, MouseTooltipY
-    If (InStr(A_ScriptName, "fillAutomatically."))
+    If (InStr(A_ScriptName, "autofillAsSoonAsWindowComesToFocus."))
     {
         MouseTooltipY -= 500
     }
@@ -64,7 +64,7 @@ CheckForGestureToClearToolTip:
             Break
         }
     }
-    If (InStr(A_ScriptName, "fillAutomatically"))
+    If (InStr(A_ScriptName, "autofillAsSoonAsWindowComesToFocus."))
     {
         Sleep, 500
         ExitApp
