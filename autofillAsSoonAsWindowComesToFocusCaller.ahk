@@ -20,6 +20,6 @@ WinProcCallback(hWinEventHook, event, hwnd, idObject, idChild, dwEventThread, dw
     If ( sClass == "#32770" && sTitle == "Radmin Security" && event == "32768")
     {
         ; MsgBox, % "Hooks Got this: " . A_TICKCOUNT
-        Run, %A_ScriptDir%\fillAutomatically.exe "Radmin security" %hwnd%
+        Run, %A_ScriptDir%\autofillAsSoonAsWindowComesToFocus.exe "Radmin security" %hwnd%
     }
 }
