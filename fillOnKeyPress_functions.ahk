@@ -1,7 +1,7 @@
 fillOnKeyPress(isSlow, textToEnter, currentWindowId)
 {
     global toolTip2Mesg, parsedCredentialsJSON
-    sleepTime := 20
+    sleepTime := 0
     SetKeyDelay, 10, 10
     if(isSlow)
     {
