@@ -26,7 +26,7 @@ If (A_Args.Length() != 1)
 paramWindowId := A_Args[1]
 ; WinGetTitle, currWindowTitle, ahk_id %paramWindowId%
 
-BlockKeyboardInputs(state = "Off")
+BlockKeyboardInputs(changeToState)
 {
     ; AddMessageAndDisplayTooltip("In BlockKeyboardInputs fucntion")
     global currentKeyboardBlockMode, hHookKeyboardBlock
@@ -79,14 +79,15 @@ DllCall( "RegisterShellHookWindow", "Ptr", A_ScriptHwnd)
 MsgNum := DllCall( "RegisterWindowMessage", Str,"SHELLHOOK" )
 OnMessage( MsgNum, "ShellMessage" )
 OnMessage( 8192, "MessageMon" )
-BlockKeyboardInputs("On")
+BlockKeyboardInputs(true)
+
 Return
 
 MessageMon(wParam, lParam, msg, hwnd)
 {
     global MsgNum
     OnMessage( MsgNum, "" )
-    BlockKeyboardInputs("Off")
+    BlockKeyboardInputs(false)
     AddMessageAndDisplayTooltip("Exiting keyboardBlockerOnFocus.exe", -10000)
     Loop, 200
     {
@@ -107,6 +108,7 @@ ShellMessage( wParam, lParam )
         WinGetClass, sClass, ahk_id %lParam%
         WinGetTitle, sTitle, ahk_id %lParam%
         AddMessageAndDisplayTooltip("Event: " . wParam . ", Title: " . sTitle ", ")
+        BlockKeyboardInputs(true)
     }
     Else If (paramWindowId != currentActiveWindowId)
     {
@@ -117,6 +119,7 @@ ShellMessage( wParam, lParam )
         changeKeyboardBlockModeTo ? BlockKeyboardInputs("On") : BlockKeyboardInputs("Off")
         AddMessageAndDisplayTooltip("Changing keyboard block mode to: " . changeKeyboardBlockModeTo)
         currentKeyboardBlockMode := changeKeyboardBlockModeTo
+        BlockKeyboardInputs(false)
     }
 }
 
