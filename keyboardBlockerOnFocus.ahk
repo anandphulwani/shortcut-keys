@@ -60,48 +60,9 @@ BlockKeyboardInputs(state = "Off")
 
 Hook_Keyboard(nCode, wParam, lParam)
 {
-    ;track our position while correctly typing the password
-    static count = 0
-
-    ;is this a keyUp event (or keyDown)
-    isKeyUp := NumGet(lParam+0, 8, "UInt") & 0x80
-
-    ;get the scan code of the key pressed/released
-    gotScanCode := NumGet(lParam+0, 4, "UInt")
-
-    ;track the left/right shift keys, to handle capitals and symbols in passwords, because getkeystate calls don't work with our method of locking the keyboard
-    ;if you can figure out how to use a getkeystate call to check for shift, or you have a better way to handle upper case letters and symbols, let me know
-    ; static shifted = 0
-    ; if(gotScanCode = 0x2A || gotScanCode = 0x36) {
-    ;     if(isKeyUp) {
-    ;         shifted := 0
-    ;     } else {
-    ;         shifted := 1
-    ;     }
-    ;     return 1
-    ; }
-
-    ; ;check password progress/completion
-    ; if (!settings.DisablePassword() && !isKeyUp) {
-    ;     expectedCharacter := SubStr(settings.Password(), count+1, 1)
-    ;     expectedScanCode := GetKeySC(expectedCharacter)
-    ;     requiresShift := requiresShift(expectedCharacter)
-
-    ;     ;did they type the correct next password letter?
-    ;     if(expectedScanCode == gotScanCode && requiresShift == shifted) {
-    ;         count := count + 1
-
-    ;         ;password is complete!
-    ;         if(count == StrLen(settings.Password())) {
-    ;             count = 0
-    ;             shifted = 0
-    ;             LockKeyboard(false)
-    ;         }
-    ;     } else {
-    ;         count = 0
-    ;     }
-    ; }
-
+    static count = 0 ; track our position while correctly typing the password
+    isKeyUp := NumGet(lParam+0, 8, "UInt") & 0x80 ; is this a keyUp event (or keyDown)
+    gotScanCode := NumGet(lParam+0, 4, "UInt") ; get the scan code of the key pressed/released
     return 1
 }
 
