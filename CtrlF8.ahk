@@ -81,6 +81,7 @@ Return
         Sleep, 30
         Send, {Alt Up}
         Sleep, 30
+        Sleep, 500
         ; BlockInput, Off
 
         PostMessage, 8192, , , , ahk_pid %keyboardBlockerOnFocusPID%
