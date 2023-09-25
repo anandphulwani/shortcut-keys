@@ -26,6 +26,8 @@ If (A_Args.Length() != 1)
 paramWindowId := A_Args[1]
 ; WinGetTitle, currWindowTitle, ahk_id %paramWindowId%
 
+currentKeyboardBlockMode := false
+hHookKeyboardBlock := 0
 BlockKeyboardInputs(changeToState)
 {
     ; AddMessageAndDisplayTooltip("In BlockKeyboardInputs fucntion")
@@ -96,7 +98,6 @@ MessageMon(wParam, lParam, msg, hwnd)
     ExitApp
 }
 
-currentKeyboardBlockMode := false
 ShellMessage( wParam, lParam )
 {
     global paramWindowId, tooltipMesg
