@@ -74,7 +74,6 @@ Return
         Run, %A_ScriptDir%\keyboardBlockerOnFocus.exe %paramWindowId%, , , keyboardBlockerOnFocusPID
         ; BlockInput, On
         ; Send, {Blind}{Text}%input%
-        ControlSendRaw,, %input%, ahk_id %paramWindowId%
         Send, {Ctrl Up}
         Sleep, 30
         Send, {Shift Up}
@@ -82,6 +81,11 @@ Return
         Send, {Alt Up}
         Sleep, 30
         Sleep, 500
+        Loop, Parse, input
+        {
+            ControlSend,, {Blind}{Text}%A_LoopField%, ahk_id %paramWindowId%
+            Sleep, 90
+        }
         ; BlockInput, Off
 
         PostMessage, 8192, , , , ahk_pid %keyboardBlockerOnFocusPID%
