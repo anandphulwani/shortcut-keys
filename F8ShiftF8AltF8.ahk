@@ -28,7 +28,6 @@ SetTimer, BailOut, 60000 ; exits after 60 seconds
 ;
 #Include %A_ScriptDir%\Includes\IncludeVariables.ahk
 #Include %A_ScriptDir%\Includes\MouseGestures.ahk
-#Include %A_ScriptDir%\credentialsEncDecKey.ahk
 
 #Include %A_ScriptDir%\fillOnKeyPress_functions.ahk
 
@@ -55,8 +54,6 @@ Loop 100
 }
 ExitApp
 
-#Include %A_ScriptDir%\Includes\IncludeVariables.ahk
-#Include %A_ScriptDir%\Includes\MouseGestures.ahk
 #Include %A_ScriptDir%\displayTooltipAndResetByGesture.ahk
 
 Return 
