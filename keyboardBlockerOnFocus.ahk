@@ -28,21 +28,81 @@ paramWindowId := A_Args[1]
 
 BlockKeyboardInputs(state = "Off")
 {
-    static keys
-    keys=Alt,Shift,Ctrl,Space,Enter,Tab,Esc,BackSpace,Del,Ins,Home,End,PgDn,PgUp,Up,Down,Left,Right,CtrlBreak,ScrollLock,PrintScreen,CapsLock
-    ,Pause,AppsKey,LWin,LWin,NumLock,Numpad0,Numpad1,Numpad2,Numpad3,Numpad4,Numpad5,Numpad6,Numpad7,Numpad8,Numpad9,NumpadDot
-    ,NumpadDiv,NumpadMult,NumpadAdd,NumpadSub,NumpadEnter,NumpadIns,NumpadEnd,NumpadDown,NumpadPgDn,NumpadLeft,NumpadClear
-    ,NumpadRight,NumpadHome,NumpadUp,NumpadPgUp,NumpadDel,Media_Next,Media_Play_Pause,Media_Prev,Media_Stop,Volume_Down,Volume_Up
-    ,Volume_Mute,Browser_Back,Browser_Favorites,Browser_Home,Browser_Refresh,Browser_Search,Browser_Stop,Launch_App1,Launch_App2
-    ,Launch_Mail,Launch_Media,F1,F2,F3,F4,F5,F6,F7,F8,F9,F10,F11,F12,F13,F14,F15,F16,F17,F18,F19,F20,F21,F22
-    ,1,2,3,4,5,6,7,8,9,0,a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z
-    ,²,&,é,",',(,-,è,_,ç,à,),=,$,£,ù,*,~,#,{,[,|,``,\,^,@,],},;,:,!,?,.,/,§,<,>,vkBC
-    Loop,Parse,keys, `,
-        Hotkey, *%A_LoopField%, KeyboardDummyLabel, %state% UseErrorLevel
-    Return
-    ; hotkeys need a label, so give them one that do nothing
-    KeyboardDummyLabel:
-    Return
+    ; AddMessageAndDisplayTooltip("In BlockKeyboardInputs fucntion")
+    global currentKeyboardBlockMode, hHookKeyboardBlock
+    if (currentKeyboardBlockMode == changeToState)
+    {
+        Return
+    }
+    currentKeyboardBlockMode := changeToState
+    If (changeToState)
+    {
+        AddMessageAndDisplayTooltip("BlockKeyboardInputs state to set: true.")
+        hHookKeyboardBlock := DllCall("SetWindowsHookEx", "Ptr", WH_KEYBOARD_LL:=13, "Ptr", RegisterCallback("Hook_Keyboard","Fast"), "Uint", DllCall("GetModuleHandle", "Uint", 0, "Ptr"), "Uint", 0, "Ptr")
+
+        ; Hotkey, LButton, checkWindowToDoNothingLButton
+        ; Hotkey, RButton, checkWindowToDoNothingRButton
+        ; Hotkey, MButton, checkWindowToDoNothingMButton
+        AddMessageAndDisplayTooltip("BlockKeyboardInputs state to set: true: Done.")
+    }
+    Else
+    {
+        AddMessageAndDisplayTooltip("BlockKeyboardInputs state to set false.")
+        DllCall("UnhookWindowsHookEx", "Ptr", hHookKeyboardBlock)
+        hHookKeyboardBlock := 0
+
+        ; Hotkey, LButton, Off
+        ; Hotkey, MButton, Off
+        ; Hotkey, RButton, Off
+        AddMessageAndDisplayTooltip("BlockKeyboardInputs state to set false: Done.")
+    }
+}
+
+Hook_Keyboard(nCode, wParam, lParam)
+{
+    ;track our position while correctly typing the password
+    static count = 0
+
+    ;is this a keyUp event (or keyDown)
+    isKeyUp := NumGet(lParam+0, 8, "UInt") & 0x80
+
+    ;get the scan code of the key pressed/released
+    gotScanCode := NumGet(lParam+0, 4, "UInt")
+
+    ;track the left/right shift keys, to handle capitals and symbols in passwords, because getkeystate calls don't work with our method of locking the keyboard
+    ;if you can figure out how to use a getkeystate call to check for shift, or you have a better way to handle upper case letters and symbols, let me know
+    ; static shifted = 0
+    ; if(gotScanCode = 0x2A || gotScanCode = 0x36) {
+    ;     if(isKeyUp) {
+    ;         shifted := 0
+    ;     } else {
+    ;         shifted := 1
+    ;     }
+    ;     return 1
+    ; }
+
+    ; ;check password progress/completion
+    ; if (!settings.DisablePassword() && !isKeyUp) {
+    ;     expectedCharacter := SubStr(settings.Password(), count+1, 1)
+    ;     expectedScanCode := GetKeySC(expectedCharacter)
+    ;     requiresShift := requiresShift(expectedCharacter)
+
+    ;     ;did they type the correct next password letter?
+    ;     if(expectedScanCode == gotScanCode && requiresShift == shifted) {
+    ;         count := count + 1
+
+    ;         ;password is complete!
+    ;         if(count == StrLen(settings.Password())) {
+    ;             count = 0
+    ;             shifted = 0
+    ;             LockKeyboard(false)
+    ;         }
+    ;     } else {
+    ;         count = 0
+    ;     }
+    ; }
+
+    return 1
 }
 
 DllCall("SetTaskmanWindow", "Ptr", A_ScriptHwnd)
