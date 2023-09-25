@@ -196,6 +196,11 @@ Else If WinExist("asdasdasdasdasdasdasdasdasdasdasdasdasdadsasdasdgfgakjhsdjsadf
     return
 }
 AddMessageAndDisplayTooltip("", -12500)
+Loop 250
+{
+    Sleep 50
+}
+ExitApp
 
 #Include %A_ScriptDir%\displayTooltipAndResetByGesture.ahk
 
