@@ -22,6 +22,7 @@ paramLongPress := A_Args[2]
 paramAdditionalModifiers := A_Args[3]
 
 SetTimer, BailOut, 60000 ; exits after 60 seconds
+
 ;
 ;
 ;

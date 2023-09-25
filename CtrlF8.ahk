@@ -19,6 +19,8 @@ If (A_Args.Length() != 1)
 
 paramWindowId := A_Args[1]
 
+SetTimer, BailOut, 300000 ; exits after 300 seconds (5 mins)
+
 ;
 ;
 ;
@@ -105,3 +107,6 @@ Return
 #Include %A_ScriptDir%\displayTooltipAndResetByGesture.ahk
 
 Return 
+
+BailOut:
+ExitApp

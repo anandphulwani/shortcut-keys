@@ -24,6 +24,9 @@ If (A_Args.Length() != 1)
 }
 
 paramWindowId := A_Args[1]
+
+SetTimer, BailOut, 300000 ; exits after 300 seconds (5 mins)
+
 ; WinGetTitle, currWindowTitle, ahk_id %paramWindowId%
 
 currentKeyboardBlockMode := false
@@ -139,3 +142,6 @@ checkWindowToDoNothingRButton:
         }
     }
 Return
+
+BailOut:
+ExitApp

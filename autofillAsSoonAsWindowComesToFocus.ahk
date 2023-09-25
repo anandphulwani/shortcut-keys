@@ -20,6 +20,8 @@ If (A_Args.Length() != 2)
 WindowType := A_Args[1]
 currWindowId := A_Args[2]
 
+SetTimer, BailOut, 10000 ; exits after 10 seconds
+
 #Include %A_ScriptDir%\Includes\IncludeVariables.ahk
 #Include %A_ScriptDir%\Includes\MouseGestures.ahk
 #Include %A_ScriptDir%\Includes\GetPasswordBoxLength.ahk
@@ -196,3 +198,6 @@ Else If WinExist("asdasdasdasdasdasdasdasdasdasdasdasdasdadsasdasdgfgakjhsdjsadf
 AddMessageAndDisplayTooltip("", -12500)
 
 #Include %A_ScriptDir%\displayTooltipAndResetByGesture.ahk
+
+BailOut:
+ExitApp
