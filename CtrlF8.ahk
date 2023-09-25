@@ -72,6 +72,12 @@ Return
         Run, %A_ScriptDir%\keyboardBlockerOnFocus.exe %paramWindowId%, , , keyboardBlockerOnFocusPID
         ; BlockInput, On
         ; Send, {Blind}{Text}%input%
+        Send {Ctrl Up}
+        Sleep 30
+        Send {Shift Up}
+        Sleep 30
+        Send {Alt Up}
+        Sleep 30
         ControlSendRaw,, %input%, ahk_id %paramWindowId%
         ; BlockInput, Off
 
