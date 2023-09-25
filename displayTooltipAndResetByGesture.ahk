@@ -8,7 +8,7 @@ GetMouseCoordsForTooltip()
     }
     Else If (InStr(A_ScriptName, "keyboardBlockerOnFocus."))
     {
-        MouseTooltipX -= 220
+        MouseTooltipX -= 270
     }
     return [MouseTooltipX, MouseTooltipY]
 }
