@@ -10,6 +10,10 @@ GetMouseCoordsForTooltip()
     {
         MouseTooltipX -= 270
     }
+    Else If (InStr(A_ScriptName, "F8ShiftF8AltF8."))
+    {
+        MouseTooltipX += 100
+    }
     return [MouseTooltipX, MouseTooltipY]
 }
 
