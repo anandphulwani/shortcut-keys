@@ -17,15 +17,15 @@ If (A_Args.Length() != 2)
     ExitApp
 }
 
+WindowType := A_Args[1]
+currWindowId := A_Args[2]
+
 #Include %A_ScriptDir%\Includes\IncludeVariables.ahk
 #Include %A_ScriptDir%\Includes\MouseGestures.ahk
 #Include %A_ScriptDir%\Includes\GetPasswordBoxLength.ahk
 #Include %A_ScriptDir%\credentialsEncDecKey.ahk
 
 #Include %A_ScriptDir%\Includes\IncludeVariables.ahk
-
-WindowType := A_Args[1]
-currWindowId := A_Args[2]
 
 toolTip2Mesg := 
 If ( WindowType == "Radmin security")
