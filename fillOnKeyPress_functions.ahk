@@ -1,4 +1,4 @@
-fillOnKeyPress(isSlow, additionalModifier, currentWindowId)
+fillOnKeyPress(isSlow, textToEnter, currentWindowId)
 {
     global toolTip2Mesg, parsedCredentialsJSON
     sleepTime := 20
@@ -16,7 +16,7 @@ fillOnKeyPress(isSlow, additionalModifier, currentWindowId)
         Sleep, % sleepTime
     }
 
-    passwordToSend := parsedCredentialsJSON["passwords"]["password" . (additionalModifier != "" ? "_" . additionalModifier: "")]
+    passwordToSend := textToEnter
     mode := "controlsend"
     If (mode == "send")
     {

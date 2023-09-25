@@ -33,6 +33,7 @@ F8:: ; F8 hotkey.
         }
         Sleep 5
     }
-    Run, %A_ScriptDir%\F8ShiftF8AltF8.exe %currentWindowId% %longPress% %additionalModifier%
+    textToEnter := parsedCredentialsJSON["passwords"]["password" . (additionalModifier != "" ? "_" . additionalModifier: "")]
+    Run, %A_ScriptDir%\F8ShiftF8AltF8.exe %currentWindowId% %longPress% %textToEnter%
     AddMessageAndDisplayTooltip("", -5000)
 return
