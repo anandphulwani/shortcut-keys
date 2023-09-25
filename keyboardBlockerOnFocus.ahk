@@ -58,6 +58,7 @@ DllCall( "RegisterShellHookWindow", "Ptr", A_ScriptHwnd)
 MsgNum := DllCall( "RegisterWindowMessage", Str,"SHELLHOOK" )
 OnMessage( MsgNum, "ShellMessage" )
 OnMessage( 8192, "MessageMon" )
+BlockKeyboardInputs("On")
 Return
 
 MessageMon(wParam, lParam, msg, hwnd)
