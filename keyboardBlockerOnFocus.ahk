@@ -41,10 +41,6 @@ BlockKeyboardInputs(changeToState)
     {
         AddMessageAndDisplayTooltip("BlockKeyboardInputs state to set: true.")
         hHookKeyboardBlock := DllCall("SetWindowsHookEx", "Ptr", WH_KEYBOARD_LL:=13, "Ptr", RegisterCallback("Hook_Keyboard","Fast"), "Uint", DllCall("GetModuleHandle", "Uint", 0, "Ptr"), "Uint", 0, "Ptr")
-
-        ; Hotkey, LButton, checkWindowToDoNothingLButton
-        ; Hotkey, RButton, checkWindowToDoNothingRButton
-        ; Hotkey, MButton, checkWindowToDoNothingMButton
         AddMessageAndDisplayTooltip("BlockKeyboardInputs state to set: true: Done.")
     }
     Else
@@ -52,10 +48,6 @@ BlockKeyboardInputs(changeToState)
         AddMessageAndDisplayTooltip("BlockKeyboardInputs state to set false.")
         DllCall("UnhookWindowsHookEx", "Ptr", hHookKeyboardBlock)
         hHookKeyboardBlock := 0
-
-        ; Hotkey, LButton, Off
-        ; Hotkey, MButton, Off
-        ; Hotkey, RButton, Off
         AddMessageAndDisplayTooltip("BlockKeyboardInputs state to set false: Done.")
     }
 }
