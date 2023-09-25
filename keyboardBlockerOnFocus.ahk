@@ -83,6 +83,10 @@ OnMessage( MsgNum, "ShellMessage" )
 OnMessage( 8192, "MessageMon" )
 BlockKeyboardInputs(true)
 
+Hotkey, LButton, checkWindowToDoNothingLButton
+Hotkey, RButton, checkWindowToDoNothingRButton
+Hotkey, MButton, checkWindowToDoNothingMButton
+
 Return
 
 MessageMon(wParam, lParam, msg, hwnd)
@@ -118,3 +122,28 @@ ShellMessage( wParam, lParam )
 #Include %A_ScriptDir%\Includes\IncludeVariables.ahk
 #Include %A_ScriptDir%\Includes\MouseGestures.ahk
 #Include %A_ScriptDir%\displayTooltipAndResetByGesture.ahk
+
+checkWindowToDoNothingLButton:
+checkWindowToDoNothingMButton:
+checkWindowToDoNothingRButton:
+    MouseGetPos, , , windowUnderCursor
+    If (currentKeyboardBlockMode && windowUnderCursor == paramWindowId)
+    {
+        Return
+    }
+    Else
+    {
+        If ( A_ThisHotkey == "LButton" )
+        {
+            Click, Left
+        }
+        Else If ( A_ThisHotkey == "RButton" )
+        {
+            Click, Right
+        }
+        Else If ( A_ThisHotkey == "MButton" )
+        {
+            Click, Middle
+        }
+    }
+Return
