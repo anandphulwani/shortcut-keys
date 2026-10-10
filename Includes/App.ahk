@@ -24,6 +24,28 @@ MapGet(map, key, default := "") {
     return Type(map) == "Map" && map.Has(key) ? map[key] : default
 }
 
+MapDeleteIfPresent(map, key) {
+    if Type(map) != "Map"
+        return false
+    try {
+        map.Delete(key)
+        return true
+    } catch {
+        return false
+    }
+}
+
+MapTakeIfPresent(map, key, &value) {
+    if Type(map) != "Map"
+        return false
+    try {
+        value := map.Delete(key)
+        return true
+    } catch {
+        return false
+    }
+}
+
 RequireMap(value, name) {
     if Type(value) != "Map"
         throw AppError(name " must be a JSON object", "INVALID_CONFIG")

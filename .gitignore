@@ -4,5 +4,6 @@ credentials.json
 dist/
 artifacts/
 *.legacy.bak
+*.before-import-*.bak
 *.tmp
 test-results/

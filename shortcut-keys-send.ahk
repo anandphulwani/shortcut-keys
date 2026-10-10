@@ -126,7 +126,7 @@ class SendWorker {
                 }
                 if A_TickCount - started > 60000
                     throw AppError("Text entry exceeded the safety timeout", "SEND_TIMEOUT")
-                ControlSendText(part, targetControl, "ahk_id " hwnd)
+                this.SendLiteralPart(hwnd, targetControl, part)
                 if delayMs
                     Sleep(delayMs)
             }
@@ -137,6 +137,25 @@ class SendWorker {
                 this.Guard.Stop()
             this.Guard := ""
         }
+    }
+
+    SendLiteralPart(hwnd, targetControl, text) {
+        if targetControl != "" {
+            try {
+                ControlSendText(text, targetControl, "ahk_id " hwnd)
+                return
+            } catch as controlError {
+                ; Browsers and other modern applications may report a focused
+                ; rendering surface that is not a usable Win32 control. When
+                ; the original target is still active, literal SendText is the
+                ; correct equivalent of the v1 script's default Send path.
+                if !WinActive("ahk_id " hwnd)
+                    throw AppError("The focused target control is unavailable and its window is no longer active", "TARGET_CONTROL_UNAVAILABLE")
+            }
+        }
+        if !WinActive("ahk_id " hwnd)
+            throw AppError("The target has no usable control and is no longer active", "TARGET_NOT_ACTIVE")
+        SendText(text)
     }
 
     WaitForModifiers(timeoutMs) {

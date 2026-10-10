@@ -40,7 +40,11 @@ class AutofillWorker {
                 if step.Has("dependsOn") && !completed.Has(String(step["dependsOn"]))
                     continue
                 this.AssertMatch(hwnd, rule["match"])
-                this.ExecuteStep(hwnd, step)
+                try this.ExecuteStep(hwnd, step)
+                catch as stepError {
+                    errorCode := stepError is AppError ? stepError.Code : "AUTOFILL_STEP_FAILED"
+                    throw AppError("Autofill step " stepId " failed", errorCode)
+                }
                 completed[stepId] := true
             }
             this.Logger.Info("Autofill completed", Map("targetHwnd", hwnd, "ruleId", MapGet(rule, "id"), "stepCount", completed.Count))
@@ -107,7 +111,9 @@ class AutofillWorker {
         this.WaitForControl(hwnd, control, timeoutMs, retryMs)
         if action == "setText" {
             value := String(MapGet(step, "value"))
-            this.RetryUntil((*) => this.SetAndVerifyText(hwnd, control, value, MapGet(step, "verify", "controlExists")), timeoutMs, retryMs, "SET_TEXT_FAILED")
+            inputMethod := StrLower(String(MapGet(step, "inputMethod", "direct")))
+            keyDelayMs := Max(0, Min(1000, Integer(MapGet(step, "keyDelayMs", 10))))
+            this.RetryUntil((*) => this.SetAndVerifyText(hwnd, control, value, MapGet(step, "verify", "controlExists"), inputMethod, keyDelayMs), timeoutMs, retryMs, "SET_TEXT_FAILED")
         } else if action == "setChecked" {
             desired := !!MapGet(step, "value", false)
             this.RetryUntil((*) => this.SetAndVerifyChecked(hwnd, control, desired, MapGet(step, "verify", "checkedEquals")), timeoutMs, retryMs, "SET_CHECKED_FAILED")
@@ -128,10 +134,17 @@ class AutofillWorker {
             return false
     }
 
-    SetAndVerifyText(hwnd, control, value, verification) {
-        try ControlSetText(value, control, "ahk_id " hwnd)
-        catch
+    SetAndVerifyText(hwnd, control, value, verification, inputMethod, keyDelayMs) {
+        try {
+            if inputMethod == "paste"
+                this.PasteText(hwnd, control, value)
+            else if inputMethod == "type"
+                this.TypeText(hwnd, control, value, keyDelayMs)
+            else
+                ControlSetText(value, control, "ahk_id " hwnd)
+        } catch {
             return false
+        }
         if verification == "none"
             return true
         if verification == "textEquals" {
@@ -140,6 +153,44 @@ class AutofillWorker {
                 return false
         }
         return this.ControlExists(hwnd, control)
+    }
+
+    PasteText(hwnd, control, value) {
+        savedClipboard := ClipboardAll()
+        clipboardSequence := 0
+        try {
+            A_Clipboard := value
+            if value != "" && !ClipWait(1)
+                throw AppError("The clipboard could not be prepared", "CLIPBOARD_TIMEOUT")
+            clipboardSequence := DllCall("GetClipboardSequenceNumber", "UInt")
+            ; Select and replace through the exact target control. WM_PASTE is
+            ; synchronous, so the original clipboard can be restored immediately.
+            SendMessage(0x00B1, 0, -1, control, "ahk_id " hwnd) ; EM_SETSEL
+            if value == ""
+                SendMessage(0x0303, 0, 0, control, "ahk_id " hwnd) ; WM_CLEAR
+            else
+                SendMessage(0x0302, 0, 0, control, "ahk_id " hwnd) ; WM_PASTE
+        } finally {
+            ; Do not overwrite clipboard content the user copied concurrently.
+            if clipboardSequence && DllCall("GetClipboardSequenceNumber", "UInt") == clipboardSequence
+                A_Clipboard := savedClipboard
+        }
+    }
+
+    TypeText(hwnd, control, value, keyDelayMs) {
+        previousDelay := A_KeyDelay
+        previousDuration := A_KeyDuration
+        try {
+            ControlFocus(control, "ahk_id " hwnd)
+            ControlSend("^a{Backspace}", control, "ahk_id " hwnd)
+            SetKeyDelay(keyDelayMs, -1)
+            ControlSendText(value, control, "ahk_id " hwnd)
+            ; ControlSend posts key messages. Give the target message loop a brief
+            ; opportunity to apply them before synchronous verification begins.
+            Sleep(Max(25, keyDelayMs))
+        } finally {
+            SetKeyDelay(previousDelay, previousDuration)
+        }
     }
 
     SetAndVerifyChecked(hwnd, control, desired, verification) {

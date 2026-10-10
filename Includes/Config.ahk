@@ -2,8 +2,9 @@ class CredentialConfig {
     static Normalize(config) {
         RequireMap(config, "credentials")
         if MapGet(config, "schemaVersion", 0) == AppInfo.CredentialSchemaVersion && config.Has("autofillRules") {
+            migrated := CredentialConfig.UpgradeKnownRules(config)
             CredentialConfig.Validate(config)
-            return Map("config", config, "migrated", false)
+            return Map("config", config, "migrated", migrated)
         }
         migrated := CredentialConfig.FromLegacy(config)
         CredentialConfig.Validate(migrated)
@@ -61,6 +62,38 @@ class CredentialConfig {
             }
         }
         return Map("schemaVersion", AppInfo.CredentialSchemaVersion, "passwords", passwords, "autofillRules", rules)
+    }
+
+    static UpgradeKnownRules(config) {
+        migrated := false
+        rules := MapGet(config, "autofillRules", [])
+        if !(rules is Array)
+            return false
+        for index, rule in rules {
+            if !(rule is Map) || MapGet(rule, "id") != "radmin-security"
+                continue
+            match := MapGet(rule, "match", 0)
+            steps := MapGet(rule, "steps", 0)
+            obsoleteSample := match is Map && MapGet(match, "process") == "Radmin.exe"
+                && MapGet(match, "titleRegex") == "^Radmin Security.*$"
+                && steps is Array && steps.Length == 3
+                && MapGet(steps[3], "control") == "Button1" && MapGet(steps[3], "action") == "click"
+            if !obsoleteSample
+                continue
+            match.Delete("process")
+            match["titleRegex"] := "i)^Radmin security:"
+            steps[1]["value"] := "User"
+            steps[3] := Map(
+                "id", "save-user", "control", "Button1", "action", "setChecked",
+                "value", 1, "dependsOn", "password", "verify", "checkedEquals"
+            )
+            steps.Push(Map(
+                "id", "submit", "control", "Button2", "action", "click",
+                "dependsOn", "save-user", "verify", "windowClosed", "timeoutMs", 5000
+            ))
+            migrated := true
+        }
+        return migrated
     }
 
     static MakeRuleId(windowType, titlePattern) {
@@ -135,6 +168,22 @@ class CredentialConfig {
                     throw AppError("A step cannot define both value and valueFrom", "INVALID_CONFIG")
                 if step.Has("dependsOn") && !stepIds.Has(String(step["dependsOn"]))
                     throw AppError("Rule " id " has a dependency that does not name an earlier step", "INVALID_CONFIG")
+                if step.Has("inputMethod") {
+                    if target != "native" || action != "setText"
+                        throw AppError("Rule " id " may use inputMethod only on native setText steps", "INVALID_CONFIG")
+                    inputMethod := StrLower(String(step["inputMethod"]))
+                    if inputMethod != "direct" && inputMethod != "paste" && inputMethod != "type"
+                        throw AppError("Rule " id " uses an unsupported inputMethod", "INVALID_CONFIG")
+                }
+                if step.Has("keyDelayMs") {
+                    if target != "native" || action != "setText" || StrLower(String(MapGet(step, "inputMethod", "direct"))) != "type"
+                        throw AppError("Rule " id " may use keyDelayMs only with inputMethod type", "INVALID_CONFIG")
+                    try keyDelayMs := Integer(step["keyDelayMs"])
+                    catch
+                        throw AppError("Rule " id " has an invalid keyDelayMs", "INVALID_CONFIG")
+                    if keyDelayMs < 0 || keyDelayMs > 1000
+                        throw AppError("Rule " id " keyDelayMs must be between 0 and 1000", "INVALID_CONFIG")
+                }
                 verification := String(MapGet(step, "verify", action == "setText" ? "controlExists" : action == "setChecked" ? "checkedEquals" : "none"))
                 allowedVerification := action == "setText" ? Map("controlExists", true, "textEquals", true, "none", true)
                     : action == "setChecked" ? Map("checkedEquals", true, "controlExists", true, "none", true)

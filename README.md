@@ -40,9 +40,13 @@ Worker requests travel through long-lived inherited anonymous pipes. Passwords a
 
 See `credentials.example.json`. Rules are evaluated in array order. A rule's `target` is `native` by default and may also be `browser`.
 
+For first-time setup or recovery from a missing/invalid encrypted file, choose **Import and Encrypt JSON...** from the tray, select `credentials.example.json`, and create a new master password twice. The previous encrypted file is backed up, the replacement is written atomically, and it is decrypted again for verification before the import succeeds. A plaintext JSON file must never be renamed directly to `credentials.json.enc`.
+
+The same sample initialization is available from source or a packaged controller with `shortcut-keys.exe --initialize-sample`; the password is requested in local masked dialogs and is never accepted on the command line.
+
 Native rules require one or more of `class`, `titleRegex`, and `process`; all supplied fields must match. Steps run in order and support:
 
-- `setText`, with `textEquals` or `controlExists` verification;
+- `setText`, with `textEquals` or `controlExists` verification. Native steps may set `inputMethod` to `direct`, `paste`, or `type`;
 - `setChecked`, with `checkedEquals` verification;
 - `click`, optionally waiting for `windowClosed`;
 - `value` or a dotted `valueFrom` path;
@@ -50,7 +54,11 @@ Native rules require one or more of `class`, `titleRegex`, and `process`; all su
 
 Default control and window waits are 5 seconds with 50 ms retries. Every operation is bound to the exact matched HWND.
 
+For native `setText` steps, `direct` is the backward-compatible default and uses the Windows control API. `paste` temporarily places the value on the clipboard, sends a synchronous paste to the exact control, and immediately restores the prior clipboard contents. `type` sends literal key events and accepts an optional `keyDelayMs` from 0 to 1000 (default 10 ms). Because `paste` necessarily exposes the value to clipboard observers for a short interval, prefer `direct` or `type` when that risk matters.
+
 Native rules may specify `presentation.mode: "offscreen"`. The worker moves the exact window beyond the complete virtual desktop, fills it, and restores its original position and state. Both the worker and controller retain restoration paths so a worker timeout or crash does not leave the window offscreen. This is visual concealment, not a security boundary.
+
+The bundled Radmin rule matches the `#32770` dialog whose title begins with `Radmin security:` (case-insensitively). It intentionally has no process restriction because the authentication dialog can be owned by the Radmin server process rather than `Radmin.exe`. It fills `Edit1` and `Edit2`, checks the Save User control (`Button1`), and submits with `Button2`. Existing dialogs are scanned immediately after credentials are unlocked, so Radmin may be opened before ShortcutKeys starts.
 
 Browser rules use an exact HTTPS `origin`, an optional `pathRegex`, CSS `selector` steps, and remain disabled in the example. The persistent browser bridge and protocol boundary are included, but browser rules are not dispatched by the native window hook: secure URL verification and DOM execution require the separately planned ShortcutKeys browser extension. The bridge currently reports that no extension is connected.
 

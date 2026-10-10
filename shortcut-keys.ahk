@@ -95,6 +95,7 @@ class ShortcutKeysApplication {
         this.Config := this.Store.Unlock(true)
         this.Notify("Credentials unlocked.", 2500)
         this.Logger.Info("Credentials unlocked", Map("schemaVersion", this.Config["schemaVersion"], "autofillRuleCount", this.Config["autofillRules"].Length))
+        this.QueueExistingWindows()
     }
 
     TrayUnlock(*) {
@@ -105,13 +106,21 @@ class ShortcutKeysApplication {
 
     TrayImport(*) {
         try {
-            if !(this.Config is Map)
-                this.UnlockCredentials()
-            source := FileSelect(1, A_ScriptDir, "Select credential JSON", "JSON files (*.json)")
+            source := FileSelect(1, A_ScriptDir "\credentials.example.json", "Select plaintext credential JSON to encrypt", "JSON files (*.json)")
             if source == ""
                 return
-            this.Config := this.Store.ImportJson(source)
-            this.Notify("Credential JSON validated and encrypted.", 3500)
+            password := this.Store.Password
+            replacingLockedFile := password == ""
+            if replacingLockedFile {
+                if FileExist(this.Store.Path) {
+                    answer := MsgBox("The current encrypted credential file cannot be reused. Importing will preserve a backup and replace it. Continue?", "Replace encrypted credentials", "YesNo Icon!")
+                    if answer != "Yes"
+                        return
+                }
+                password := PromptNewMasterPassword()
+            }
+            this.Config := this.Store.ImportJson(source, password, true)
+            this.Notify("Credential JSON encrypted and verified" (this.Store.LastBackupPath != "" ? "; previous file backed up." : "."), 5000)
         } catch as caughtError {
             this.ShowError(caughtError)
         }
@@ -304,11 +313,23 @@ class ShortcutKeysApplication {
             return ""
     }
 
+    QueueExistingWindows() {
+        if !(this.Config is Map) || !this.AutofillEnabled
+            return
+        try {
+            for hwnd in WinGetList()
+                this.OnWindowEvent(0x8002, hwnd)
+        }
+    }
+
     OnWindowEvent(event, hwnd) {
         if event == 0x8001 {
-            this.PendingWindows.Delete(hwnd), this.ActiveWindows.Delete(hwnd), this.HandledWindows.Delete(hwnd)
-            if this.WindowRecovery.Has(hwnd)
-                this.WindowRecovery.Delete(hwnd)
+            callback := ""
+            if MapTakeIfPresent(this.PendingWindows, hwnd, &callback)
+                try SetTimer(callback, 0)
+            MapDeleteIfPresent(this.ActiveWindows, hwnd)
+            MapDeleteIfPresent(this.HandledWindows, hwnd)
+            MapDeleteIfPresent(this.WindowRecovery, hwnd)
             return
         }
         if !this.AutofillEnabled || !(this.Config is Map) || this.PendingWindows.Has(hwnd) || this.ActiveWindows.Has(hwnd) || this.HandledWindows.Has(hwnd)
@@ -319,7 +340,10 @@ class ShortcutKeysApplication {
     }
 
     EvaluateWindow(hwnd) {
-        this.PendingWindows.Delete(hwnd)
+        ; A destroy event can remove this HWND after the timer was queued but
+        ; before its callback begins (or while this thread is interrupted).
+        if !MapDeleteIfPresent(this.PendingWindows, hwnd)
+            return
         if !this.AutofillEnabled || !WinExist("ahk_id " hwnd)
             return
         for rule in this.Config["autofillRules"] {
@@ -342,7 +366,7 @@ class ShortcutKeysApplication {
                 this.Workers.Submit("native", "autofill", Map("targetHwnd", hwnd, "rule", resolved), ObjBindMethod(this, "OnAutofillComplete", hwnd), 70000)
             }
             catch as caughtError {
-                this.ActiveWindows.Delete(hwnd)
+                MapDeleteIfPresent(this.ActiveWindows, hwnd)
                 this.RestoreWindowIfNeeded(hwnd)
                 this.ShowError(caughtError)
             }
@@ -366,7 +390,7 @@ class ShortcutKeysApplication {
 
     OnAutofillComplete(hwnd, response) {
         this.RestoreWindowIfNeeded(hwnd)
-        this.ActiveWindows.Delete(hwnd)
+        MapDeleteIfPresent(this.ActiveWindows, hwnd)
         if WinExist("ahk_id " hwnd)
             this.HandledWindows[hwnd] := true
         if !MapGet(response, "ok", false)
@@ -379,10 +403,9 @@ class ShortcutKeysApplication {
     }
 
     RestoreWindowIfNeeded(hwnd) {
-        if !this.WindowRecovery.Has(hwnd)
+        snapshot := ""
+        if !MapTakeIfPresent(this.WindowRecovery, hwnd, &snapshot)
             return
-        snapshot := this.WindowRecovery[hwnd]
-        this.WindowRecovery.Delete(hwnd)
         if !WinExist("ahk_id " hwnd)
             return
         try {
@@ -435,11 +458,55 @@ class ShortcutKeysApplication {
     }
 }
 
+PromptNewMasterPassword() {
+    first := InputBox("Create a master password for credentials.json.enc.", "Encrypt ShortcutKeys credentials", "Password w460 h160")
+    if first.Result != "OK"
+        throw AppError("Credential initialization was canceled", "IMPORT_CANCELED")
+    if first.Value == ""
+        throw AppError("The master password cannot be empty", "EMPTY_MASTER_PASSWORD")
+    second := InputBox("Enter the same master password again.", "Confirm master password", "Password w460 h160")
+    if second.Result != "OK"
+        throw AppError("Credential initialization was canceled", "IMPORT_CANCELED")
+    if first.Value != second.Value
+        throw AppError("The master passwords did not match", "PASSWORD_MISMATCH")
+    password := first.Value
+    first := "", second := ""
+    return password
+}
+
+InitializeSampleCredentials() {
+    samplePath := A_ScriptDir "\credentials.example.json"
+    if !FileExist(samplePath) {
+        MsgBox("credentials.example.json was not found beside the application.", "ShortcutKeys initialization", "Iconx")
+        return 1
+    }
+    try {
+        answer := MsgBox("This will encrypt credentials.example.json as credentials.json.enc. Any existing encrypted file will be backed up first. Continue?", "Initialize sample credentials", "YesNo Icon!")
+        if answer != "Yes"
+            return 2
+        password := PromptNewMasterPassword()
+        store := CredentialStore()
+        config := store.ImportJson(samplePath, password, true)
+        verification := store.TryUnlock(password)
+        if !(verification["config"] is Map) || verification["config"]["schemaVersion"] != AppInfo.CredentialSchemaVersion
+            throw AppError("The encrypted sample could not be verified", "VERIFY_FAILED")
+        store.ClearMemory(), password := "", config := "", verification := ""
+        MsgBox("The sample was encrypted and decrypted successfully. You can now use the tray Export and Import actions to replace its values.", "ShortcutKeys initialization", "Iconi")
+        return 0
+    } catch as caughtError {
+        MsgBox(SafeErrorMessage(caughtError), "ShortcutKeys initialization failed", "Iconx")
+        return 1
+    }
+}
+
 if EnvGet("SHORTCUT_KEYS_SELF_TEST") == "1" || HasOption(A_Args, "self-test") || HasOption(A_Args, "--self-test") {
     if !A_IsCompiled
         FileAppend("ShortcutKeys " AppInfo.Version "`n", "*")
     ExitApp()
 }
+
+if HasOption(A_Args, "--initialize-sample")
+    ExitApp(InitializeSampleCredentials())
 
 global ShortcutKeys := ShortcutKeysApplication()
 ShortcutKeys.Start()

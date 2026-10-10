@@ -66,6 +66,17 @@ suite.Run("JSON Unicode and escaping", (*) => (
     suite.Assert(JsonLoad(JsonDump(parsed))["items"].Length == 3, "JSON round trip failed")
 ))
 
+suite.Run("Window-state map cleanup is idempotent", (*) => (
+    state := Map(),
+    suite.Assert(!MapDeleteIfPresent(state, 2492342), "Deleting an absent HWND should be a no-op"),
+    state[2492342] := true,
+    suite.Assert(MapDeleteIfPresent(state, 2492342), "An existing HWND was not removed"),
+    suite.Assert(!MapDeleteIfPresent(state, 2492342), "Repeated HWND cleanup should be a no-op"),
+    state[2492342] := "callback",
+    suite.Assert(MapTakeIfPresent(state, 2492342, &removed) && removed == "callback", "Taking an HWND did not return its state"),
+    suite.Assert(!MapTakeIfPresent(state, 2492342, &removed), "Repeated HWND take should be a no-op")
+))
+
 suite.Run("AES-GCM credential round trip", (*) => (
     plain := '{"schemaVersion":2,"message":"päss 🔐"}',
     envelope := CngCrypto.EncryptText(plain, "correct horse battery staple"),
@@ -110,8 +121,11 @@ suite.Run("Public native and browser schema example validates", (*) => (
     example := CredentialConfig.Normalize(JsonLoad(FileRead(A_ScriptDir "\..\credentials.example.json", "UTF-8"))),
     suite.Assert(example["config"]["autofillRules"].Length == 2, "Schema example rules were not loaded")
 ))
+suite.Run("Obsolete bundled Radmin rule is repaired without changing passwords", (*) => TestRadminRuleUpgrade(suite))
 
 suite.Run("Credential atomic write and verification", (*) => TestCredentialStore(suite))
+suite.Run("Bundled sample encrypts, decrypts, exports, and preserves a backup", (*) => TestBundledSampleRoundTrip(suite))
+suite.Run("Plaintext JSON at encrypted path gives an actionable error", (*) => TestPlaintextAtEncryptedPath(suite))
 suite.Run("Legacy credential file migration", (*) => TestLegacyMigration(suite))
 suite.Run("Persistent worker handshake, framing, and reuse", (*) => TestWorkerPipe(suite))
 suite.Run("Truncated pipe frames are rejected", (*) => TestTruncatedPipe(suite))
@@ -121,6 +135,29 @@ suite.Run("Native worker pool executes and restores offscreen jobs", (*) => Test
 suite.Run("Browser bridge starts and reports extension state", (*) => TestBrowserWorker(suite))
 
 suite.Finish()
+
+TestRadminRuleUpgrade(suite) {
+    config := Map(
+        "schemaVersion", 2,
+        "passwords", Map("password", "keep-me"),
+        "autofillRules", [Map(
+            "id", "radmin-security", "enabled", 1, "target", "native",
+            "match", Map("class", "#32770", "titleRegex", "^Radmin Security.*$", "process", "Radmin.exe"),
+            "steps", [
+                Map("id", "username", "control", "Edit1", "action", "setText", "value", "username", "verify", "textEquals"),
+                Map("id", "password", "control", "Edit2", "action", "setText", "valueFrom", "passwords.password", "verify", "controlExists"),
+                Map("id", "submit", "control", "Button1", "action", "click", "dependsOn", "password", "verify", "windowClosed")
+            ]
+        )]
+    )
+    normalized := CredentialConfig.Normalize(config)
+    rule := normalized["config"]["autofillRules"][1]
+    suite.Assert(normalized["migrated"], "Obsolete Radmin sample was not marked for encrypted rewrite")
+    suite.Assert(normalized["config"]["passwords"]["password"] == "keep-me", "Password data changed during rule repair")
+    suite.Assert(!rule["match"].Has("process") && rule["match"]["titleRegex"] == "i)^Radmin security:", "Radmin match was not repaired")
+    suite.Assert(rule["steps"].Length == 4 && rule["steps"][3]["action"] == "setChecked", "Radmin Save User step was not repaired")
+    suite.Assert(rule["steps"][4]["control"] == "Button2", "Radmin submit control was not repaired")
+}
 
 TestCredentialStore(suite) {
     directory := A_Temp "\ShortcutKeysTests-" ProcessExist()
@@ -143,6 +180,40 @@ TestCredentialStore(suite) {
     DirDelete(tempCollision)
     FileDelete(path)
     DirDelete(directory, true)
+}
+
+TestBundledSampleRoundTrip(suite) {
+    directory := A_Temp "\ShortcutKeysSampleTests-" ProcessExist()
+    DirCreate(directory)
+    path := directory "\credentials.json.enc"
+    FileAppend("previous encrypted content", path, "UTF-8-RAW")
+    store := CredentialStore(path, AppLogger("tests", directory), false)
+    try {
+        imported := store.ImportJson(A_ScriptDir "\..\credentials.example.json", "sample-round-trip-password", true)
+        suite.Assert(store.LastBackupPath != "" && FileExist(store.LastBackupPath), "The previous credential file was not backed up")
+        suite.Assert(FileRead(store.LastBackupPath, "UTF-8") == "previous encrypted content", "The credential backup was changed")
+        unlocked := store.TryUnlock("sample-round-trip-password")["config"]
+        suite.Assert(unlocked["schemaVersion"] == 2, "The encrypted sample did not decrypt")
+        suite.Assert(unlocked["passwords"]["password"] == imported["passwords"]["password"], "The sample password field did not round trip")
+        exportPath := directory "\credentials.export.json"
+        store.Config := unlocked
+        store.ExportJson(exportPath)
+        exported := JsonLoad(FileRead(exportPath, "UTF-8"))
+        suite.Assert(exported["passwords"]["password"] == imported["passwords"]["password"], "The decrypted sample export did not match")
+    } finally {
+        store.ClearMemory()
+        DirDelete(directory, true)
+    }
+}
+
+TestPlaintextAtEncryptedPath(suite) {
+    directory := A_Temp "\ShortcutKeysPlaintextTests-" ProcessExist()
+    DirCreate(directory)
+    path := directory "\credentials.json.enc"
+    FileCopy(A_ScriptDir "\..\credentials.example.json", path)
+    store := CredentialStore(path, AppLogger("tests", directory), false)
+    try suite.ExpectError((*) => store.TryUnlock("irrelevant"), "PLAINTEXT_CREDENTIAL_FILE")
+    finally DirDelete(directory, true)
 }
 
 TestLegacyMigration(suite) {
@@ -232,6 +303,20 @@ TestSendWorker(suite) {
         WaitForResult(&SendWorkerResult)
         suite.Assert(SendWorkerResult["ok"], "Send worker failed: " JsonDump(SendWorkerResult))
         suite.Assert(textControl.Value == "literal {+} päss 🔐", "Send worker did not preserve literal Unicode text; actual=" textControl.Value)
+
+        textControl.Value := "", SendWorkerResult := ""
+        WinActivate("ahk_id " testGui.Hwnd), textControl.Focus(), Sleep(50)
+        manager.Submit("send", "send", Map("targetHwnd", testGui.Hwnd, "targetControl", "", "text", "active fallback {+}", "delayMs", 0, "guard", 0), (response) => SendWorkerResult := response, 10000)
+        WaitForResult(&SendWorkerResult)
+        suite.Assert(SendWorkerResult["ok"], "Active-window fallback failed: " JsonDump(SendWorkerResult))
+        suite.Assert(textControl.Value == "active fallback {+}", "Active-window fallback did not send literal text; actual=" textControl.Value)
+
+        textControl.Value := "", SendWorkerResult := ""
+        WinActivate("ahk_id " testGui.Hwnd), textControl.Focus(), Sleep(50)
+        manager.Submit("send", "send", Map("targetHwnd", testGui.Hwnd, "targetControl", "MissingControl42", "text", "invalid-control fallback", "delayMs", 0, "guard", 0), (response) => SendWorkerResult := response, 10000)
+        WaitForResult(&SendWorkerResult)
+        suite.Assert(SendWorkerResult["ok"], "Invalid-control fallback failed: " JsonDump(SendWorkerResult))
+        suite.Assert(textControl.Value == "invalid-control fallback", "Invalid-control fallback did not send text; actual=" textControl.Value)
     } finally {
         manager.Stop()
         testGui.Destroy()
@@ -241,17 +326,22 @@ TestSendWorker(suite) {
 TestAutofillWorker(suite) {
     global AutofillWorkerResult := ""
     testGui := Gui(, "ShortcutKeys Autofill Worker Test")
-    textControl := testGui.AddEdit("w400")
+    pastedControl := testGui.AddEdit("w400", "replace pasted text")
+    typedControl := testGui.AddEdit("w400", "replace typed text")
     checkbox := testGui.AddCheckbox(, "Enabled")
     testGui.Show("x220 y220")
     WinGetPos(&originalX, &originalY,,, "ahk_id " testGui.Hwnd)
+    clipboardMarker := "clipboard must survive autofill"
+    savedClipboard := ClipboardAll()
+    A_Clipboard := clipboardMarker
     rule := Map(
         "id", "integration-test",
         "match", Map("class", WinGetClass("ahk_id " testGui.Hwnd), "titleRegex", "^ShortcutKeys Autofill Worker Test$", "process", WinGetProcessName("ahk_id " testGui.Hwnd)),
         "presentation", Map("mode", "offscreen", "edge", "top", "restore", 1),
         "steps", [
-            Map("id", "text", "control", "Edit1", "action", "setText", "value", "worker value", "verify", "textEquals"),
-            Map("id", "check", "control", "Button1", "action", "setChecked", "value", 1, "dependsOn", "text", "verify", "checkedEquals")
+            Map("id", "paste", "control", "Edit1", "action", "setText", "inputMethod", "paste", "value", "pasted {+} value", "verify", "textEquals"),
+            Map("id", "type", "control", "Edit2", "action", "setText", "inputMethod", "type", "keyDelayMs", 0, "value", "typed {+} value", "dependsOn", "paste", "verify", "textEquals"),
+            Map("id", "check", "control", "Button1", "action", "setChecked", "value", 1, "dependsOn", "type", "verify", "checkedEquals")
         ]
     )
     manager := PersistentWorkerSupervisor(AppLogger("tests", A_Temp "\ShortcutKeysTests"))
@@ -261,14 +351,17 @@ TestAutofillWorker(suite) {
         WaitForWorkers(manager, "native", 2)
         manager.Submit("native", "autofill", Map("targetHwnd", testGui.Hwnd, "rule", rule), (response) => AutofillWorkerResult := response, 10000)
         WaitForResult(&AutofillWorkerResult)
+        suite.Assert(pastedControl.Value == "pasted {+} value", "Autofill paste input method failed")
+        suite.Assert(typedControl.Value == "typed {+} value", "Autofill type input method failed; actual=" typedControl.Value)
         suite.Assert(AutofillWorkerResult["ok"], "Autofill worker failed: " JsonDump(AutofillWorkerResult))
-        suite.Assert(textControl.Value == "worker value", "Autofill text step failed")
+        suite.Assert(A_Clipboard == clipboardMarker, "Autofill paste did not restore the clipboard")
         suite.Assert(checkbox.Value == 1, "Autofill checkbox step failed")
         WinGetPos(&restoredX, &restoredY,,, "ahk_id " testGui.Hwnd)
         suite.Assert(restoredX == originalX && restoredY == originalY, "Offscreen window position was not restored")
     } finally {
         manager.Stop()
         testGui.Destroy()
+        A_Clipboard := savedClipboard
     }
 }
 

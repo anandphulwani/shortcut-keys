@@ -5,6 +5,7 @@ class CredentialStore {
         this.RegistryEnabled := registryEnabled
         this.Password := ""
         this.Config := ""
+        this.LastBackupPath := ""
     }
 
     Unlock(interactive := true) {
@@ -55,6 +56,8 @@ class CredentialStore {
             plaintext := LegacyCrypto.DecryptHex(trimmed, password)
         } else {
             envelope := JsonLoad(trimmed)
+            if !envelope.Has("formatVersion") && (envelope.Has("schemaVersion") || envelope.Has("passwords"))
+                throw AppError("Plaintext credential JSON cannot be used as credentials.json.enc. Use Import and Encrypt JSON.", "PLAINTEXT_CREDENTIAL_FILE")
             plaintext := CngCrypto.DecryptEnvelope(envelope, password)
         }
         try config := JsonLoad(plaintext)
@@ -114,11 +117,28 @@ class CredentialStore {
         }
     }
 
-    ImportJson(sourcePath) {
+    ImportJson(sourcePath, password := "", backupExisting := false) {
         config := JsonLoad(FileRead(sourcePath, "UTF-8"))
         normalized := CredentialConfig.Normalize(config)
-        this.SaveConfig(normalized["config"])
+        CredentialConfig.Validate(normalized["config"])
+        effectivePassword := password != "" ? password : this.Password
+        if effectivePassword == ""
+            throw AppError("A new master password is required to encrypt the imported JSON", "UNLOCK_REQUIRED")
+        this.LastBackupPath := backupExisting ? this.BackupExistingFile() : ""
+        this.SaveConfig(normalized["config"], effectivePassword)
+        this.Password := effectivePassword
+        if this.RegistryEnabled
+            this.WriteDpapiCache(effectivePassword)
         return normalized["config"]
+    }
+
+    BackupExistingFile() {
+        if !FileExist(this.Path)
+            return ""
+        timestamp := FormatTime(, "yyyyMMdd-HHmmss")
+        backupPath := this.Path ".before-import-" timestamp "-" ProcessExist() ".bak"
+        FileCopy(this.Path, backupPath)
+        return backupPath
     }
 
     ExportJson(destinationPath) {
