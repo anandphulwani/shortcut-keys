@@ -1,2 +1,8 @@
 credentials.json
 *.exe
+.tools/
+dist/
+artifacts/
+*.legacy.bak
+*.tmp
+test-results/

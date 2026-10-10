@@ -1,0 +1,38 @@
+name: build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download pinned AutoHotkey and Ahk2Exe
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force .ci-tools | Out-Null
+          Invoke-WebRequest 'https://github.com/AutoHotkey/AutoHotkey/releases/download/v2.0.30/AutoHotkey_2.0.30.zip' -OutFile .ci-tools/ahk.zip
+          Invoke-WebRequest 'https://github.com/AutoHotkey/Ahk2Exe/releases/download/Ahk2Exe1.1.37.02a2/Ahk2Exe.zip' -OutFile .ci-tools/compiler.zip
+          if ((Get-FileHash .ci-tools/ahk.zip -Algorithm SHA256).Hash -ne '1E0ECE7ECB2D5646E55758150472677996A57F9DB5C83D2996D8B47B9E2F31A4') { throw 'AutoHotkey hash mismatch' }
+          if ((Get-FileHash .ci-tools/compiler.zip -Algorithm SHA256).Hash -ne 'C29B8C3A5124850D79FC9E66E2CA79677C377D7F31631AD3022BA159C5D9E3BE') { throw 'Ahk2Exe hash mismatch' }
+          Expand-Archive .ci-tools/ahk.zip .ci-tools/ahk
+          Expand-Archive .ci-tools/compiler.zip .ci-tools/compiler
+
+      - name: Build and test x64 and x86
+        shell: pwsh
+        run: |
+          $compiler = (Get-ChildItem .ci-tools\compiler -Recurse -Filter Ahk2Exe.exe | Select-Object -First 1).FullName
+          if (-not $compiler) { throw 'Ahk2Exe.exe was not found in the pinned compiler package' }
+          .\build.ps1 -Architecture all -AutoHotkeyRoot .ci-tools\ahk -CompilerPath $compiler
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shortcut-keys-windows
+          path: artifacts/*.zip
