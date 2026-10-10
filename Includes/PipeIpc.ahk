@@ -11,21 +11,32 @@ class PipeProtocol {
         return frame
     }
 
-    static Write(file, message) {
+    static Write(file, message, timeoutMs := 2000) {
         frame := PipeProtocol.Encode(message)
+        ; RawWrite plus FlushFileBuffers can wait forever for a pipe peer to
+        ; read. Use bounded, nonblocking byte-pipe writes instead. A timed-out
+        ; partial frame is fatal to that connection; callers close/restart it.
+        mode := 1 ; PIPE_NOWAIT (byte-read mode is unchanged)
+        if !DllCall("SetNamedPipeHandleState", "Ptr", file.Handle, "UInt*", &mode, "Ptr", 0, "Ptr", 0, "Int")
+            throw AppError("The worker pipe could not enter nonblocking mode", "IPC_NONBLOCKING_UNAVAILABLE")
+        started := A_TickCount
         offset := 0
         while offset < frame.Size {
-            remaining := frame.Size - offset
-            chunk := Buffer(remaining, 0)
-            DllCall("RtlMoveMemory", "Ptr", chunk.Ptr, "Ptr", frame.Ptr + offset, "UPtr", remaining)
-            written := file.RawWrite(chunk, remaining)
-            if written <= 0
-                throw AppError("Unable to write a complete worker message", "IPC_WRITE_FAILED")
-            offset += written
+            if A_TickCount - started >= timeoutMs
+                throw AppError("The worker pipe did not accept the message in time", "IPC_WRITE_TIMEOUT")
+            written := 0
+            remaining := Min(65536, frame.Size - offset)
+            if !DllCall("WriteFile", "Ptr", file.Handle, "Ptr", frame.Ptr + offset,
+                "UInt", remaining, "UInt*", &written, "Ptr", 0, "Int")
+                throw AppError("Unable to write a worker message", "IPC_WRITE_FAILED")
+            if written {
+                offset += written
+                continue
+            }
+            ; Keep the frame contiguous: do not yield to another AHK callback
+            ; that could write to this same pipe before this frame is complete.
+            DllCall("Sleep", "UInt", 5)
         }
-        ; A persistent worker does not close stdout after each response, so the
-        ; frame must be committed to the pipe explicitly.
-        DllCall("FlushFileBuffers", "Ptr", file.Handle)
     }
 
     static Read(file) {
@@ -175,6 +186,7 @@ class PersistentWorkerSupervisor {
         this.Pools := Map()
         this.Queues := Map()
         this.Jobs := Map()
+        this.ControlStates := Map()
         this.Stopping := false
         this.Polling := false
         this.PollCallback := ObjBindMethod(this, "Poll")
@@ -223,6 +235,20 @@ class PersistentWorkerSupervisor {
         this.Queues[role].Push(queued)
         this.Dispatch(role)
         return jobId
+    }
+
+    SetControlState(role, action, payload) {
+        if !this.Pools.Has(role)
+            throw AppError("Worker role is not registered: " role, "WORKER_ROLE_MISSING")
+        message := Map("protocolVersion", AppInfo.ProtocolVersion, "kind", "control", "action", action, "payload", payload)
+        this.ControlStates[role] := message
+        for worker in this.Pools[role] {
+            if !worker.RequestWrite || (worker.State != "ready" && worker.State != "busy")
+                continue
+            try PipeProtocol.Write(worker.RequestWrite, message)
+            catch
+                worker.Terminate(128)
+        }
     }
 
     Cancel(jobId) {
@@ -286,6 +312,13 @@ class PersistentWorkerSupervisor {
         worker.State := "ready"
         worker.RestartCount := 0
         this.Logger.Info("Worker ready", Map("role", worker.Role, "workerId", worker.WorkerId, "pid", worker.ProcessId))
+        if this.ControlStates.Has(worker.Role) {
+            try PipeProtocol.Write(worker.RequestWrite, this.ControlStates[worker.Role])
+            catch {
+                worker.Terminate(128)
+                return
+            }
+        }
         this.Dispatch(worker.Role)
     }
 
@@ -524,11 +557,12 @@ class PersistentWorker {
     }
 
     Stop() {
-        if this.State == "ready" && this.RequestWrite {
-            try PipeProtocol.Write(this.RequestWrite, Map("protocolVersion", AppInfo.ProtocolVersion, "kind", "shutdown"))
-        }
-        if this.ProcessHandle
+        ; Exit must not wait for a stalled worker to read a shutdown frame.
+        ; The job object and process handles are closed by the supervisor.
+        if this.ProcessHandle {
             DllCall("TerminateProcess", "Ptr", this.ProcessHandle, "UInt", 0)
+            DllCall("WaitForSingleObject", "Ptr", this.ProcessHandle, "UInt", 250)
+        }
         this.CleanupProcess()
         this.State := "stopped"
     }

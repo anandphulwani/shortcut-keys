@@ -97,16 +97,22 @@ class SendWorker {
             payload := job["payload"]
             hwnd := Integer(MapGet(payload, "targetHwnd", 0))
             targetControl := String(MapGet(payload, "targetControl"))
+            targetControlHwnd := Integer(MapGet(payload, "targetControlHwnd", 0))
             text := NormalizeLineEndings(String(MapGet(payload, "text")))
             delayMs := Max(0, Min(1000, Integer(MapGet(payload, "delayMs", 0))))
             useGuard := !!MapGet(payload, "guard", false)
             sendMode := StrLower(String(MapGet(payload, "sendMode", "control")))
             safetyTimeoutMs := Max(10000, Min(595000, Integer(MapGet(payload, "timeoutMs", 60000))))
-            if sendMode != "control" && sendMode != "keyboard"
+            if sendMode != "control" && sendMode != "keyboard" && sendMode != "background"
                 throw AppError("The text send mode is invalid", "INVALID_SEND_MODE")
             if !hwnd || !WinExist("ahk_id " hwnd)
                 throw AppError("The target window no longer exists", "TARGET_GONE")
-            this.WaitForModifiers(3000)
+            if sendMode == "background" {
+                if useGuard
+                    throw AppError("Background input cannot use the foreground guard", "INVALID_SEND_MODE")
+                this.ValidateBackgroundControl(hwnd, targetControlHwnd)
+            } else
+                this.WaitForModifiers(3000)
             if sendMode == "keyboard" {
                 SetKeyDelay(0, -1)
                 keyDelayChanged := true
@@ -132,7 +138,11 @@ class SendWorker {
                 }
                 if A_TickCount - started > safetyTimeoutMs
                     throw AppError("Text entry exceeded the safety timeout", "SEND_TIMEOUT")
-                this.SendLiteralPart(hwnd, targetControl, part, sendMode)
+                if sendMode == "background" {
+                    this.ValidateBackgroundControl(hwnd, targetControlHwnd)
+                    this.SendBackgroundPart(targetControlHwnd, part)
+                } else
+                    this.SendLiteralPart(hwnd, targetControl, part, sendMode)
                 if delayMs
                     Sleep(delayMs)
             }
@@ -153,6 +163,34 @@ class SendWorker {
             throw AppError("The target window could not be activated", "TARGET_NOT_ACTIVE")
         if targetControl != ""
             try ControlFocus(targetControl, "ahk_id " hwnd)
+    }
+
+    ValidateBackgroundControl(hwnd, controlHwnd) {
+        if !controlHwnd || !DllCall("IsWindow", "Ptr", controlHwnd, "Int")
+            throw AppError("The captured text control is unavailable", "TARGET_CONTROL_UNAVAILABLE")
+        root := DllCall("GetAncestor", "Ptr", controlHwnd, "UInt", 2, "Ptr")
+        if root != hwnd
+            throw AppError("The captured text control no longer belongs to the selected window", "TARGET_CONTROL_UNAVAILABLE")
+        if !DllCall("IsWindowEnabled", "Ptr", controlHwnd, "Int")
+            throw AppError("The captured text control is disabled", "TARGET_CONTROL_UNAVAILABLE")
+        try className := WinGetClass("ahk_id " controlHwnd)
+        catch
+            throw AppError("The captured text control is unavailable", "TARGET_CONTROL_UNAVAILABLE")
+        if !RegExMatch(className, "i)^(Edit|RichEdit.*|RICHEDIT.*|Scintilla)$")
+            throw AppError("This is not a supported background text control", "TARGET_CONTROL_UNAVAILABLE")
+    }
+
+    SendBackgroundPart(controlHwnd, text) {
+        try {
+            if text == "`n"
+                ControlSend("{Enter}",, "ahk_id " controlHwnd)
+            else if text == "`t"
+                ControlSend("{Tab}",, "ahk_id " controlHwnd)
+            else
+                ControlSendText(text,, "ahk_id " controlHwnd)
+        } catch {
+            throw AppError("This control did not accept background text input", "TARGET_CONTROL_UNAVAILABLE")
+        }
     }
 
     BuildParts(text, oneGraphemeAtATime) {

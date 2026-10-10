@@ -17,6 +17,7 @@ class ShortcutKeysApplication {
         this.Logger := AppLogger("main")
         this.Store := CredentialStore(, this.Logger)
         this.Config := ""
+        this.ManualLock := false
         this.AutofillEnabled := true
         this.PendingWindows := Map()
         this.ActiveWindows := Map()
@@ -26,13 +27,17 @@ class ShortcutKeysApplication {
         this.TextGui := ""
         this.TextEdit := ""
         this.TextSpeedEdit := ""
+        this.TextModeChoice := ""
         this.TextConfirmCheck := ""
         this.TextNormalizeCheck := ""
         this.TextSendDelayMs := 30
+        this.TextSendMode := 1
         this.TextSendSession := ""
         this.LineConfirmGui := ""
+        this.BrowserSessionsGui := ""
         this.TextTargetHwnd := 0
         this.TextTargetControl := ""
+        this.TextTargetControlHwnd := 0
         this.PauseGui := ""
         this.ReenableTimer := ""
         this.WindowMonitor := WindowEventMonitor(ObjBindMethod(this, "OnWindowEvent"))
@@ -61,6 +66,7 @@ class ShortcutKeysApplication {
     ConfigureTray() {
         A_TrayMenu.Delete()
         A_TrayMenu.Add("Unlock / Reload Credentials", ObjBindMethod(this, "TrayUnlock"))
+        A_TrayMenu.Add("Lock Credentials", ObjBindMethod(this, "TrayLock"))
         A_TrayMenu.Add("Import and Encrypt JSON...", ObjBindMethod(this, "TrayImport"))
         A_TrayMenu.Add("Export Decrypted JSON...", ObjBindMethod(this, "TrayExport"))
         A_TrayMenu.Add()
@@ -97,17 +103,50 @@ class ShortcutKeysApplication {
         this.Notify(lines[1] "`n" lines[2] "`n" lines[3], 6000)
     }
 
-    UnlockCredentials() {
+    UnlockCredentials(manual := false) {
+        if this.ManualLock && !manual
+            throw AppError("Credentials are locked. Unlock them from the tray menu.", "CREDENTIALS_LOCKED")
         this.Config := this.Store.Unlock(true)
+        this.ManualLock := false
+        this.SyncBrowserRules()
         this.Notify("Credentials unlocked.", 2500)
         this.Logger.Info("Credentials unlocked", Map("schemaVersion", this.Config["schemaVersion"], "autofillRuleCount", this.Config["autofillRules"].Length))
         this.QueueExistingWindows()
     }
 
     TrayUnlock(*) {
-        try this.UnlockCredentials()
+        this.Logger.Info("Tray credential reload requested")
+        try this.UnlockCredentials(true)
         catch as caughtError
             this.ShowError(caughtError)
+    }
+
+    TrayLock(*) {
+        this.ManualLock := true
+        this.Config := ""
+        this.Store.ClearMemory()
+        this.SyncBrowserRules()
+        this.Notify("Credentials locked.", 2500)
+    }
+
+    SyncBrowserRules() {
+        if !(this.Workers is PersistentWorkerSupervisor)
+            return
+        rules := []
+        if this.AutofillEnabled && this.Config is Map && !this.ManualLock {
+            for rule in this.Config["autofillRules"] {
+                if StrLower(String(MapGet(rule, "target", "native"))) != "browser" || !MapGet(rule, "enabled", true)
+                    continue
+                resolved := Map("id", rule["id"], "match", rule["match"], "autoSubmit", MapGet(rule, "autoSubmit", false), "steps", [])
+                for step in rule["steps"]
+                    resolved["steps"].Push(CredentialConfig.ResolveStep(step, this.Config))
+                rules.Push(resolved)
+            }
+        }
+        snapshot := Map("version", 1, "generation", ProcessExist() "-" A_TickCount "-" Random(100000, 999999), "rules", rules)
+        try this.Workers.SetControlState("browser", "cacheSnapshot", Map("snapshot", snapshot))
+        catch as caughtError
+            this.Logger.Warn("Browser rule cache could not be queued", Map("code", caughtError is AppError ? caughtError.Code : Type(caughtError)))
     }
 
     TrayImport(*) {
@@ -126,6 +165,8 @@ class ShortcutKeysApplication {
                 password := PromptNewMasterPassword()
             }
             this.Config := this.Store.ImportJson(source, password, true)
+            this.ManualLock := false
+            this.SyncBrowserRules()
             this.Notify("Credential JSON encrypted and verified" (this.Store.LastBackupPath != "" ? "; previous file backed up." : "."), 5000)
         } catch as caughtError {
             this.ShowError(caughtError)
@@ -151,6 +192,7 @@ class ShortcutKeysApplication {
 
     TrayToggleAutofill(*) {
         this.AutofillEnabled := !this.AutofillEnabled
+        this.SyncBrowserRules()
         this.Notify("Automatic fill is " (this.AutofillEnabled ? "enabled." : "disabled."), 3000)
     }
 
@@ -194,10 +236,13 @@ class ShortcutKeysApplication {
         }
         targetHwnd := WinExist("A")
         targetControl := this.GetFocusedControl(targetHwnd)
+        targetControlHwnd := this.GetFocusedControlHwnd(targetHwnd, targetControl)
         windowGui := Gui(, "ShortcutKeys - Text To Send")
         windowGui.SetFont("s10", "Segoe UI")
         windowGui.AddText("w600", "Enter text to send. Press Ctrl+Enter to submit.")
         textControl := windowGui.AddEdit("w600 h160 WantTab")
+        windowGui.AddText("xm y+10", "Send mode:")
+        modeChoice := windowGui.AddDropDownList("xm w300 Choose" this.TextSendMode, ["Foreground keyboard", "Background control", "Direct noVNC"])
         windowGui.AddText("xm y+10", "Delay between keyboard events (milliseconds):")
         speedControl := windowGui.AddEdit("xm w90 Number", this.TextSendDelayMs)
         windowGui.AddUpDown("Range0-1000", this.TextSendDelayMs)
@@ -210,8 +255,8 @@ class ShortcutKeysApplication {
         windowGui.OnEvent("Close", (*) => this.CloseTextGui())
         windowGui.OnEvent("Escape", (*) => this.CloseTextGui())
         this.TextGui := windowGui, this.TextEdit := textControl
-        this.TextSpeedEdit := speedControl, this.TextConfirmCheck := confirmControl, this.TextNormalizeCheck := normalizeControl
-        this.TextTargetHwnd := targetHwnd, this.TextTargetControl := targetControl
+        this.TextSpeedEdit := speedControl, this.TextConfirmCheck := confirmControl, this.TextNormalizeCheck := normalizeControl, this.TextModeChoice := modeChoice
+        this.TextTargetHwnd := targetHwnd, this.TextTargetControl := targetControl, this.TextTargetControlHwnd := targetControlHwnd
         windowGui.Show("AutoSize Center")
         textControl.Focus()
     }
@@ -240,15 +285,13 @@ class ShortcutKeysApplication {
         if this.TextNormalizeCheck.Value
             text := NormalizeKeyboardText(text)
         confirmLines := !!this.TextConfirmCheck.Value
+        mode := this.TextModeChoice.Value
         this.TextSendDelayMs := delayMs
+        this.TextSendMode := mode
+        targetControlHwnd := this.TextTargetControlHwnd
         this.CloseTextGui()
         try {
-            if confirmLines && InStr(text, "`n")
-                this.StartConfirmedText(targetHwnd, targetControl, text, delayMs)
-            else {
-                this.StartSendWorker(targetHwnd, targetControl, text, delayMs, true, "keyboard")
-                this.Notify("Keyboard entry started. Ctrl+Alt+Esc cancels it.", 3000)
-            }
+            this.StartTextEntry(targetHwnd, targetControl, targetControlHwnd, text, delayMs, mode, confirmLines)
         } catch as caughtError {
             this.ShowError(caughtError)
         }
@@ -257,52 +300,175 @@ class ShortcutKeysApplication {
     CloseTextGui() {
         if this.TextGui is Gui
             try this.TextGui.Destroy()
-        this.TextGui := "", this.TextEdit := "", this.TextSpeedEdit := "", this.TextConfirmCheck := "", this.TextNormalizeCheck := ""
-        this.TextTargetHwnd := 0, this.TextTargetControl := ""
+        this.TextGui := "", this.TextEdit := "", this.TextSpeedEdit := "", this.TextConfirmCheck := "", this.TextNormalizeCheck := "", this.TextModeChoice := ""
+        this.TextTargetHwnd := 0, this.TextTargetControl := "", this.TextTargetControlHwnd := 0
     }
 
-    StartConfirmedText(hwnd, targetControl, text, delayMs) {
+    StartTextEntry(hwnd, targetControl, controlHwnd, text, delayMs, mode, confirmLines) {
+        if mode != 3 && (!hwnd || !WinExist("ahk_id " hwnd))
+            throw AppError("The selected target window no longer exists", "TARGET_GONE")
+        if !(this.Workers is PersistentWorkerSupervisor)
+            throw AppError("Background workers are unavailable", "WORKER_UNAVAILABLE")
+        if mode == 3 && RegExMatch(text, "[\x00-\x08\x0B-\x1F\x7F]")
+            throw AppError("Direct noVNC cannot send this control character", "NOVNC_UNSUPPORTED_CHARACTER")
         this.TextSendSession := Map(
-            "targetHwnd", hwnd,
-            "targetControl", targetControl,
-            "lines", SplitTextLines(text),
-            "index", 1,
-            "delayMs", delayMs
+            "targetHwnd", hwnd, "targetControl", targetControl, "controlHwnd", controlHwnd,
+            "lines", confirmLines && InStr(text, "`n") ? SplitTextLines(text) : [text],
+            "index", 1, "delayMs", delayMs, "mode", mode, "jobId", "", "browserSession", ""
         )
-        this.SendConfirmedLine()
+        if mode == 3 {
+            session := this.TextSendSession
+            session["jobId"] := this.Workers.Submit("browser", "browser", Map("action", "listSessions"), ObjBindMethod(this, "OnBrowserSessions", session), 5000)
+            this.Notify("Finding connected noVNC consoles...", 2500)
+        } else
+            this.SendCurrentSegment()
     }
 
-    SendConfirmedLine() {
-        if !(this.TextSendSession is Map)
+    OnBrowserSessions(session, response) {
+        if this.TextSendSession != session
             return
-        session := this.TextSendSession
-        index := session["index"]
-        text := (index > 1 ? "`n" : "") session["lines"][index]
-        try this.StartSendWorker(
-            session["targetHwnd"], session["targetControl"], text, session["delayMs"], true, "keyboard",
-            ObjBindMethod(this, "OnConfirmedLineComplete")
-        )
-        catch as caughtError {
-            this.TextSendSession := ""
-            this.ShowError(caughtError)
-        }
-    }
-
-    OnConfirmedLineComplete(response) {
-        if !(this.TextSendSession is Map)
-            return
+        session["jobId"] := ""
         if !MapGet(response, "ok", false) {
             this.TextSendSession := ""
             this.OnSendComplete(response)
             return
         }
-        session := this.TextSendSession
-        if session["index"] >= session["lines"].Length {
+        sessions := MapGet(response, "sessions", [])
+        if sessions.Length == 0 {
             this.TextSendSession := ""
-            this.Notify("Text entry completed.", 3000)
+            this.Notify("No connected Proxmox noVNC console is authorized. Check extension settings and connection.", 6500)
+        } else if sessions.Length == 1 {
+            session["browserSession"] := sessions[1]
+            this.SendCurrentSegment()
+        } else {
+            labels := []
+            for item in sessions
+                labels.Push(item["label"])
+            picker := Gui(, "Choose noVNC console")
+            picker.AddText("w540", "Select the connected guest that already has the intended control focused:")
+            choice := picker.AddListBox("xm w540 r8 Choose1", labels)
+            sendButton := picker.AddButton("xm y+12 Default w120", "Send")
+            cancelButton := picker.AddButton("x+16 w120", "Cancel")
+            sendButton.OnEvent("Click", (*) => this.SelectBrowserSession(session, sessions, choice.Value))
+            cancelButton.OnEvent("Click", (*) => this.CancelTextSending())
+            picker.OnEvent("Close", (*) => this.CancelTextSending())
+            picker.OnEvent("Escape", (*) => this.CancelTextSending())
+            this.BrowserSessionsGui := picker
+            picker.Show("AutoSize Center")
+        }
+    }
+
+    SelectBrowserSession(session, sessions, index) {
+        if this.TextSendSession != session || index < 1 || index > sessions.Length
+            return
+        this.CloseBrowserPicker()
+        session["browserSession"] := sessions[index]
+        this.SendCurrentSegment()
+    }
+
+    CloseBrowserPicker() {
+        if this.BrowserSessionsGui is Gui
+            try this.BrowserSessionsGui.Destroy()
+        this.BrowserSessionsGui := ""
+    }
+
+    SendCurrentSegment() {
+        if !(this.TextSendSession is Map)
+            return
+        session := this.TextSendSession
+        text := (session["index"] > 1 ? "`n" : "") session["lines"][session["index"]]
+        session["currentText"] := text
+        try {
+            if session["mode"] == 3 {
+                session["offset"] := 1
+                this.SendBrowserBatch(session)
+            } else if session["mode"] == 2 {
+                if !session["controlHwnd"]
+                    this.OfferForegroundFallback(session)
+                else
+                    session["jobId"] := this.StartSendWorker(session["targetHwnd"], session["targetControl"], text, session["delayMs"], false, "background", ObjBindMethod(this, "OnTextSegmentComplete", session), session["controlHwnd"])
+            } else {
+                session["jobId"] := this.StartSendWorker(session["targetHwnd"], session["targetControl"], text, session["delayMs"], true, "keyboard", ObjBindMethod(this, "OnTextSegmentComplete", session))
+            }
+        } catch as caughtError {
+            this.TextSendSession := ""
+            this.ShowError(caughtError)
+        }
+    }
+
+    SendBrowserBatch(session) {
+        if this.TextSendSession != session
+            return
+        text := session["currentText"]
+        if session["offset"] > StrLen(text) {
+            this.OnTextSegmentComplete(session, Map("ok", 1))
             return
         }
-        this.ShowLineConfirmation()
+        delayMs := session["delayMs"]
+        maxUnits := delayMs == 0 ? 32 : Max(1, Min(16, Floor(250 / delayMs)))
+        batch := "", offset := session["offset"]
+        while offset <= StrLen(text) && RegExMatch(text, "\X", &match, offset) {
+            if batch != "" && StrLen(batch) + match.Len > maxUnits
+                break
+            batch .= match[0]
+            offset += match.Len
+            if StrLen(batch) >= maxUnits
+                break
+        }
+        if batch == "" {
+            this.TextSendSession := ""
+            this.Notify("Text entry failed: NOVNC_UNSUPPORTED_CHARACTER", 5000)
+            return
+        }
+        target := session["browserSession"]
+        payload := Map("action", "sendBatch", "sessionId", target["sessionId"], "expectedUrl", target["url"], "text", batch, "delayMs", delayMs)
+        timeoutMs := Max(7000, StrLen(batch) * delayMs + 5000)
+        session["jobId"] := this.Workers.Submit("browser", "browser", payload, ObjBindMethod(this, "OnBrowserBatchComplete", session, StrLen(batch)), timeoutMs)
+    }
+
+    OnBrowserBatchComplete(session, consumed, response) {
+        if this.TextSendSession != session
+            return
+        session["jobId"] := ""
+        if !MapGet(response, "ok", false) {
+            this.OnTextSegmentComplete(session, response)
+            return
+        }
+        session["offset"] += consumed
+        this.SendBrowserBatch(session)
+    }
+
+    OnTextSegmentComplete(session, response) {
+        if this.TextSendSession != session
+            return
+        session["jobId"] := ""
+        if !MapGet(response, "ok", false) {
+            if session["mode"] == 2 && MapGet(response, "code") == "TARGET_CONTROL_UNAVAILABLE" {
+                this.OfferForegroundFallback(session, true)
+                return
+            }
+            this.TextSendSession := ""
+            this.OnSendComplete(response)
+            return
+        }
+        if session["index"] >= session["lines"].Length {
+            this.TextSendSession := ""
+            this.Notify(session["mode"] == 3 ? "noVNC accepted the key events; guest entry is not verified." : "Text entry completed.", 4000)
+        } else
+            this.ShowLineConfirmation()
+    }
+
+    OfferForegroundFallback(session, possiblyPartial := false) {
+        if this.TextSendSession != session
+            return
+        warning := possiblyPartial ? "Some text may already have been sent. Remove any partial entry before choosing Yes to resend this line.`n`n" : ""
+        answer := MsgBox(warning "This application has no usable background text control. Switch this text entry to foreground keyboard mode? This will activate the original window.", "Background input unavailable", "YesNo Icon!")
+        if answer != "Yes" {
+            this.CancelTextSending()
+            return
+        }
+        session["mode"] := 1
+        this.SendCurrentSegment()
     }
 
     ShowLineConfirmation() {
@@ -325,19 +491,29 @@ class ShortcutKeysApplication {
             return
         this.CloseLineConfirmation()
         this.TextSendSession["index"] += 1
-        this.SendConfirmedLine()
+        this.SendCurrentSegment()
     }
 
     CancelConfirmedText() {
-        this.CloseLineConfirmation()
-        this.TextSendSession := ""
-        this.Notify("Text entry canceled.", 3000)
+        this.CancelTextSending()
     }
 
     CloseLineConfirmation() {
         if this.LineConfirmGui is Gui
             try this.LineConfirmGui.Destroy()
         this.LineConfirmGui := ""
+    }
+
+    CancelTextSending() {
+        this.CloseLineConfirmation()
+        this.CloseBrowserPicker()
+        if this.TextSendSession is Map {
+            jobId := this.TextSendSession["jobId"]
+            this.TextSendSession := ""
+            if jobId != "" && this.Workers is PersistentWorkerSupervisor
+                this.Workers.Cancel(jobId)
+        }
+        this.Notify("Text entry canceled.", 3000)
     }
 
     HandleF1() {
@@ -409,14 +585,14 @@ class ShortcutKeysApplication {
         this.Notify("Automatic fill is enabled.", 3000)
     }
 
-    StartSendWorker(hwnd, targetControl, text, delayMs, guard, sendMode := "control", completion := "") {
+    StartSendWorker(hwnd, targetControl, text, delayMs, guard, sendMode := "control", completion := "", targetControlHwnd := 0) {
         if !hwnd || !WinExist("ahk_id " hwnd)
             throw AppError("The selected target window no longer exists", "TARGET_GONE")
         if !(this.Workers is PersistentWorkerSupervisor)
             throw AppError("The send worker is unavailable", "WORKER_UNAVAILABLE")
         timeoutMs := Max(70000, Min(600000, StrLen(text) * (delayMs + 20) + 10000))
         payload := Map(
-            "targetHwnd", hwnd, "targetControl", targetControl, "text", text,
+            "targetHwnd", hwnd, "targetControl", targetControl, "targetControlHwnd", targetControlHwnd, "text", text,
             "delayMs", delayMs, "guard", guard ? 1 : 0, "sendMode", sendMode,
             "timeoutMs", timeoutMs - 5000
         )
@@ -435,6 +611,14 @@ class ShortcutKeysApplication {
         try return ControlGetFocus("ahk_id " hwnd)
         catch
             return ""
+    }
+
+    GetFocusedControlHwnd(hwnd, control) {
+        if !hwnd || control == ""
+            return 0
+        try return ControlGetHwnd(control, "ahk_id " hwnd)
+        catch
+            return 0
     }
 
     QueueExistingWindows() {
@@ -620,9 +804,12 @@ class ShortcutKeysApplication {
     }
 
     OnExit(reason, code) {
+        this.Logger.Info("Shutdown started", Map("reason", reason))
         this.WindowMonitor.Stop()
+        this.Logger.Info("Window monitor stopped")
         if this.Workers is PersistentWorkerSupervisor
             this.Workers.Stop()
+        this.Logger.Info("Workers stopped")
         while this.WindowRecovery.Count {
             for hwnd in this.WindowRecovery {
                 this.RestoreWindowIfNeeded(hwnd)
@@ -630,6 +817,7 @@ class ShortcutKeysApplication {
             }
         }
         this.Store.ClearMemory()
+        this.Logger.Info("Shutdown completed")
     }
 }
 
@@ -693,3 +881,6 @@ $^F8::ShortcutKeys.HandleTextHotkey()
 $F1::ShortcutKeys.HandleF1()
 $^Enter::ShortcutKeys.HandleCtrlEnter("Enter")
 $^NumpadEnter::ShortcutKeys.HandleCtrlEnter("NumpadEnter")
+#HotIf ShortcutKeys.TextSendSession is Map
+$^!Esc::ShortcutKeys.CancelTextSending()
+#HotIf

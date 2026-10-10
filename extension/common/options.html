@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>ShortcutKeys browser permissions</title>
+<style>
+  body { font: 16px system-ui, sans-serif; max-width: 680px; margin: 2rem auto; line-height: 1.5; }
+  input[type=url] { width: 65%; padding: .5rem; } button { padding: .5rem .8rem; }
+  input[type=checkbox] { width: auto; } label { cursor: pointer; }
+  li { margin: .5rem 0; } .error { color: #a00000; }
+</style>
+<h1>ShortcutKeys browser access</h1>
+<p><label><input id="allow-all-sites" type="checkbox"> Allow on all websites (HTTP and HTTPS)</label></p>
+<p>This grants broad page access, but credentials are released only when an enabled rule matches the selected tab's exact origin and the desktop app is unlocked. HTTP login pages are not encrypted in transit. Use HTTPS whenever possible.</p>
+<p id="private-status"></p>
+<p>For Edge InPrivate windows, open <code>edge://extensions</code>, select <strong>ShortcutKeys Browser Bridge → Details</strong>, and turn on <strong>Allow in InPrivate</strong>. The extension cannot change this browser-controlled setting.</p>
+<details><summary>Authorize only specific sites instead</summary>
+<p>Add an exact site origin, including its port. Cross-origin login iframes need both origins approved.</p>
+<form id="add-form"><label for="origin">Site origin</label><br><input id="origin" type="url" required placeholder="https://example.com"><button>Add and authorize</button></form>
+<ul id="origins"></ul>
+</details>
+<p id="status" role="status"></p>
+<script src="options.js"></script>
+</html>

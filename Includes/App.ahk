@@ -1,6 +1,6 @@
 class AppInfo {
     static Name := "ShortcutKeys"
-    static Version := "2.1.0"
+    static Version := "2.2.0"
     static ProtocolVersion := 2
     static CredentialSchemaVersion := 2
     static CredentialPath := A_ScriptDir "\credentials.json.enc"

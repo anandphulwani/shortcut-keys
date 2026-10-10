@@ -109,6 +109,8 @@ class CredentialConfig {
         passwords := RequireMap(MapGet(config, "passwords", 0), "passwords")
         if !passwords.Has("password")
             throw AppError("passwords.password is required", "INVALID_CONFIG")
+        if config.Has("siteCredentials")
+            RequireMap(config["siteCredentials"], "siteCredentials")
         rules := RequireArray(MapGet(config, "autofillRules", 0), "autofillRules")
         ids := Map()
         for index, rule in rules {
@@ -130,12 +132,21 @@ class CredentialConfig {
             }
             if target == "browser" {
                 origin := String(MapGet(match, "origin"))
-                if !RegExMatch(origin, "i)^https://[a-z0-9.-]+(?::\d+)?$")
-                    throw AppError("Browser rule " id " requires an exact HTTPS origin", "INVALID_CONFIG")
+                if !RegExMatch(origin, "i)^https?://[a-z0-9.-]+(?::\d+)?$")
+                    throw AppError("Browser rule " id " requires an exact HTTP or HTTPS origin", "INVALID_CONFIG")
+                if match.Has("frameOrigin") && !RegExMatch(String(match["frameOrigin"]), "i)^https?://[a-z0-9.-]+(?::\d+)?$")
+                    throw AppError("Browser rule " id " requires an exact HTTP or HTTPS frameOrigin", "INVALID_CONFIG")
                 if match.Has("pathRegex") {
                     try RegExMatch("", match["pathRegex"])
                     catch
                         throw AppError("Browser rule " id " has an invalid pathRegex", "INVALID_CONFIG")
+                }
+                if match.Has("framePathRegex") {
+                    if !match.Has("frameOrigin")
+                        throw AppError("Browser rule " id " needs frameOrigin with framePathRegex", "INVALID_CONFIG")
+                    try RegExMatch("", match["framePathRegex"])
+                    catch
+                        throw AppError("Browser rule " id " has an invalid framePathRegex", "INVALID_CONFIG")
                 }
             }
             if rule.Has("presentation") {
@@ -153,6 +164,7 @@ class CredentialConfig {
             }
             steps := RequireArray(MapGet(rule, "steps", 0), "autofill rule steps")
             stepIds := Map()
+            browserClicks := 0
             for stepIndex, step in steps {
                 RequireMap(step, "step " stepIndex)
                 stepId := String(MapGet(step, "id"))
@@ -161,11 +173,24 @@ class CredentialConfig {
                 action := MapGet(step, "action")
                 if action != "setText" && action != "setChecked" && action != "click"
                     throw AppError("Rule " id " uses an unsupported action", "INVALID_CONFIG")
+                if target == "browser" && action == "click" {
+                    browserClicks += 1
+                    if stepIndex != steps.Length
+                        throw AppError("Browser rule " id " must put submit last", "INVALID_CONFIG")
+                }
+                if step.Has("submitMethod") {
+                    if target != "browser" || action != "click"
+                        throw AppError("Rule " id " may use submitMethod only on a browser click step", "INVALID_CONFIG")
+                    if String(step["submitMethod"]) != "dom" && String(step["submitMethod"]) != "extjs"
+                        throw AppError("Rule " id " has an unsupported submitMethod", "INVALID_CONFIG")
+                }
                 targetField := target == "browser" ? "selector" : "control"
                 if String(MapGet(step, targetField)) == ""
                     throw AppError("Rule " id " has a step without a " targetField, "INVALID_CONFIG")
                 if step.Has("value") && step.Has("valueFrom")
                     throw AppError("A step cannot define both value and valueFrom", "INVALID_CONFIG")
+                if target == "browser" && action != "click" && !step.Has("value") && !step.Has("valueFrom")
+                    throw AppError("Browser rule " id " has a value-less input step", "INVALID_CONFIG")
                 if step.Has("dependsOn") && !stepIds.Has(String(step["dependsOn"]))
                     throw AppError("Rule " id " has a dependency that does not name an earlier step", "INVALID_CONFIG")
                 if step.Has("inputMethod") {
@@ -192,6 +217,8 @@ class CredentialConfig {
                     throw AppError("Rule " id " uses an unsupported verification mode for " action, "INVALID_CONFIG")
                 stepIds[stepId] := true
             }
+            if target == "browser" && (browserClicks != (MapGet(rule, "autoSubmit", false) ? 1 : 0))
+                throw AppError("Browser rule " id " needs one final click only when autoSubmit is enabled", "INVALID_CONFIG")
         }
         return true
     }

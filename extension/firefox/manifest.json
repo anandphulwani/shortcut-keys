@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "ShortcutKeys Browser Bridge",
+  "version": "2.3.0",
+  "description": "Fill approved website logins and send text to Proxmox noVNC consoles.",
+  "permissions": ["nativeMessaging", "scripting", "storage"],
+  "optional_host_permissions": ["https://*/*", "http://*/*"],
+  "background": { "scripts": ["background.js"] },
+  "options_ui": { "page": "options.html", "open_in_tab": true },
+  "browser_specific_settings": { "gecko": { "id": "shortcutkeys-novnc@example.org", "strict_min_version": "128.0" } },
+  "action": { "default_title": "ShortcutKeys browser settings" }
+}
