@@ -25,6 +25,12 @@ class ShortcutKeysApplication {
         this.Workers := ""
         this.TextGui := ""
         this.TextEdit := ""
+        this.TextSpeedEdit := ""
+        this.TextConfirmCheck := ""
+        this.TextNormalizeCheck := ""
+        this.TextSendDelayMs := 30
+        this.TextSendSession := ""
+        this.LineConfirmGui := ""
         this.TextTargetHwnd := 0
         this.TextTargetControl := ""
         this.PauseGui := ""
@@ -174,6 +180,14 @@ class ShortcutKeysApplication {
     }
 
     HandleTextHotkey() {
+        if this.LineConfirmGui is Gui {
+            try this.LineConfirmGui.Show()
+            return
+        }
+        if this.TextSendSession is Map {
+            this.Notify("Text entry is already in progress.", 3000)
+            return
+        }
         if this.TextGui is Gui {
             try this.TextGui.Show()
             return
@@ -184,13 +198,20 @@ class ShortcutKeysApplication {
         windowGui.SetFont("s10", "Segoe UI")
         windowGui.AddText("w600", "Enter text to send. Press Ctrl+Enter to submit.")
         textControl := windowGui.AddEdit("w600 h160 WantTab")
-        ok := windowGui.AddButton("Default w140", "OK")
+        windowGui.AddText("xm y+10", "Delay between keyboard events (milliseconds):")
+        speedControl := windowGui.AddEdit("xm w90 Number", this.TextSendDelayMs)
+        windowGui.AddUpDown("Range0-1000", this.TextSendDelayMs)
+        confirmControl := windowGui.AddCheckbox("xm y+10", "Confirm before sending each next line")
+        normalizeControl := windowGui.AddCheckbox("xm y+6 Checked", "Normalize formatted Unicode punctuation for keyboard compatibility")
+        ok := windowGui.AddButton("xm y+14 Default w140", "Send")
         cancel := windowGui.AddButton("x+20 w140", "Cancel")
         ok.OnEvent("Click", (*) => this.SubmitTextGui(targetHwnd, targetControl))
         cancel.OnEvent("Click", (*) => this.CloseTextGui())
         windowGui.OnEvent("Close", (*) => this.CloseTextGui())
         windowGui.OnEvent("Escape", (*) => this.CloseTextGui())
-        this.TextGui := windowGui, this.TextEdit := textControl, this.TextTargetHwnd := targetHwnd, this.TextTargetControl := targetControl
+        this.TextGui := windowGui, this.TextEdit := textControl
+        this.TextSpeedEdit := speedControl, this.TextConfirmCheck := confirmControl, this.TextNormalizeCheck := normalizeControl
+        this.TextTargetHwnd := targetHwnd, this.TextTargetControl := targetControl
         windowGui.Show("AutoSize Center")
         textControl.Focus()
     }
@@ -206,11 +227,28 @@ class ShortcutKeysApplication {
     SubmitTextGui(targetHwnd, targetControl := "") {
         if !(this.TextGui is Gui)
             return
-        text := this.TextEdit.Value
+        try delayMs := Integer(this.TextSpeedEdit.Value)
+        catch {
+            this.Notify("The keyboard delay must be a number from 0 to 1000.", 4000)
+            return
+        }
+        if delayMs < 0 || delayMs > 1000 {
+            this.Notify("The keyboard delay must be from 0 to 1000 milliseconds.", 4000)
+            return
+        }
+        text := NormalizeLineEndings(this.TextEdit.Value)
+        if this.TextNormalizeCheck.Value
+            text := NormalizeKeyboardText(text)
+        confirmLines := !!this.TextConfirmCheck.Value
+        this.TextSendDelayMs := delayMs
         this.CloseTextGui()
         try {
-            this.StartSendWorker(targetHwnd, targetControl, text, 90, true)
-            this.Notify("Text entry started. Ctrl+Alt+Esc cancels it.", 3000)
+            if confirmLines && InStr(text, "`n")
+                this.StartConfirmedText(targetHwnd, targetControl, text, delayMs)
+            else {
+                this.StartSendWorker(targetHwnd, targetControl, text, delayMs, true, "keyboard")
+                this.Notify("Keyboard entry started. Ctrl+Alt+Esc cancels it.", 3000)
+            }
         } catch as caughtError {
             this.ShowError(caughtError)
         }
@@ -219,7 +257,87 @@ class ShortcutKeysApplication {
     CloseTextGui() {
         if this.TextGui is Gui
             try this.TextGui.Destroy()
-        this.TextGui := "", this.TextEdit := "", this.TextTargetHwnd := 0, this.TextTargetControl := ""
+        this.TextGui := "", this.TextEdit := "", this.TextSpeedEdit := "", this.TextConfirmCheck := "", this.TextNormalizeCheck := ""
+        this.TextTargetHwnd := 0, this.TextTargetControl := ""
+    }
+
+    StartConfirmedText(hwnd, targetControl, text, delayMs) {
+        this.TextSendSession := Map(
+            "targetHwnd", hwnd,
+            "targetControl", targetControl,
+            "lines", SplitTextLines(text),
+            "index", 1,
+            "delayMs", delayMs
+        )
+        this.SendConfirmedLine()
+    }
+
+    SendConfirmedLine() {
+        if !(this.TextSendSession is Map)
+            return
+        session := this.TextSendSession
+        index := session["index"]
+        text := (index > 1 ? "`n" : "") session["lines"][index]
+        try this.StartSendWorker(
+            session["targetHwnd"], session["targetControl"], text, session["delayMs"], true, "keyboard",
+            ObjBindMethod(this, "OnConfirmedLineComplete")
+        )
+        catch as caughtError {
+            this.TextSendSession := ""
+            this.ShowError(caughtError)
+        }
+    }
+
+    OnConfirmedLineComplete(response) {
+        if !(this.TextSendSession is Map)
+            return
+        if !MapGet(response, "ok", false) {
+            this.TextSendSession := ""
+            this.OnSendComplete(response)
+            return
+        }
+        session := this.TextSendSession
+        if session["index"] >= session["lines"].Length {
+            this.TextSendSession := ""
+            this.Notify("Text entry completed.", 3000)
+            return
+        }
+        this.ShowLineConfirmation()
+    }
+
+    ShowLineConfirmation() {
+        session := this.TextSendSession
+        confirmationGui := Gui("+AlwaysOnTop", "Continue text entry")
+        confirmationGui.SetFont("s10", "Segoe UI")
+        confirmationGui.AddText("w360", "Line " session["index"] " of " session["lines"].Length " was sent. Send the next line?")
+        nextButton := confirmationGui.AddButton("xm y+14 Default w140", "Next line")
+        cancelButton := confirmationGui.AddButton("x+20 w140", "Cancel")
+        nextButton.OnEvent("Click", (*) => this.ContinueConfirmedText())
+        cancelButton.OnEvent("Click", (*) => this.CancelConfirmedText())
+        confirmationGui.OnEvent("Close", (*) => this.CancelConfirmedText())
+        confirmationGui.OnEvent("Escape", (*) => this.CancelConfirmedText())
+        this.LineConfirmGui := confirmationGui
+        confirmationGui.Show("AutoSize Center")
+    }
+
+    ContinueConfirmedText() {
+        if !(this.TextSendSession is Map)
+            return
+        this.CloseLineConfirmation()
+        this.TextSendSession["index"] += 1
+        this.SendConfirmedLine()
+    }
+
+    CancelConfirmedText() {
+        this.CloseLineConfirmation()
+        this.TextSendSession := ""
+        this.Notify("Text entry canceled.", 3000)
+    }
+
+    CloseLineConfirmation() {
+        if this.LineConfirmGui is Gui
+            try this.LineConfirmGui.Destroy()
+        this.LineConfirmGui := ""
     }
 
     HandleF1() {
@@ -291,13 +409,19 @@ class ShortcutKeysApplication {
         this.Notify("Automatic fill is enabled.", 3000)
     }
 
-    StartSendWorker(hwnd, targetControl, text, delayMs, guard) {
+    StartSendWorker(hwnd, targetControl, text, delayMs, guard, sendMode := "control", completion := "") {
         if !hwnd || !WinExist("ahk_id " hwnd)
             throw AppError("The selected target window no longer exists", "TARGET_GONE")
         if !(this.Workers is PersistentWorkerSupervisor)
             throw AppError("The send worker is unavailable", "WORKER_UNAVAILABLE")
-        payload := Map("targetHwnd", hwnd, "targetControl", targetControl, "text", text, "delayMs", delayMs, "guard", guard ? 1 : 0)
-        this.Workers.Submit("send", "send", payload, ObjBindMethod(this, "OnSendComplete"), 70000)
+        timeoutMs := Max(70000, Min(600000, StrLen(text) * (delayMs + 20) + 10000))
+        payload := Map(
+            "targetHwnd", hwnd, "targetControl", targetControl, "text", text,
+            "delayMs", delayMs, "guard", guard ? 1 : 0, "sendMode", sendMode,
+            "timeoutMs", timeoutMs - 5000
+        )
+        callback := IsObject(completion) ? completion : ObjBindMethod(this, "OnSendComplete")
+        return this.Workers.Submit("send", "send", payload, callback, timeoutMs)
     }
 
     OnSendComplete(response) {
@@ -332,11 +456,19 @@ class ShortcutKeysApplication {
             MapDeleteIfPresent(this.WindowRecovery, hwnd)
             return
         }
-        if !this.AutofillEnabled || !(this.Config is Map) || this.PendingWindows.Has(hwnd) || this.ActiveWindows.Has(hwnd) || this.HandledWindows.Has(hwnd)
+        if !this.AutofillEnabled || !(this.Config is Map) || this.HandledWindows.Has(hwnd)
+            return
+        ; Move a matched window before the queued worker job. CREATE events can
+        ; arrive before the title is ready, so SHOW events retry this even when
+        ; an evaluation timer is already pending.
+        this.PrepareWindowPresentation(hwnd, event == 0x8002)
+        if this.ActiveWindows.Has(hwnd)
+            return
+        if this.PendingWindows.Has(hwnd)
             return
         callback := ObjBindMethod(this, "EvaluateWindow", hwnd)
         this.PendingWindows[hwnd] := callback
-        SetTimer(callback, -250)
+        SetTimer(callback, -1)
     }
 
     EvaluateWindow(hwnd) {
@@ -358,7 +490,7 @@ class ShortcutKeysApplication {
                 resolvedSteps.Push(CredentialConfig.ResolveStep(step, this.Config))
             resolved["steps"] := resolvedSteps
             this.ActiveWindows[hwnd] := true
-            if resolved.Has("presentation") && resolved["presentation"] is Map && MapGet(resolved["presentation"], "mode") == "offscreen"
+            if resolved.Has("presentation") && resolved["presentation"] is Map && MapGet(resolved["presentation"], "mode") == "offscreen" && !this.WindowRecovery.Has(hwnd)
                 this.WindowRecovery[hwnd] := this.CaptureWindow(hwnd)
             try {
                 if !(this.Workers is PersistentWorkerSupervisor)
@@ -400,6 +532,49 @@ class ShortcutKeysApplication {
     CaptureWindow(hwnd) {
         WinGetPos(&x, &y, &width, &height, "ahk_id " hwnd)
         return Map("x", x, "y", y, "width", width, "height", height, "state", WinGetMinMax("ahk_id " hwnd))
+    }
+
+    PrepareWindowPresentation(hwnd, forceMove := false) {
+        if !DllCall("IsWindow", "Ptr", hwnd, "Int")
+            return
+        if this.WindowRecovery.Has(hwnd) && !forceMove
+            return
+        for rule in this.Config["autofillRules"] {
+            target := StrLower(String(MapGet(rule, "target", "native")))
+            if target != "native" || !MapGet(rule, "enabled", true) || !this.RuleMatches(hwnd, rule["match"])
+                continue
+            presentation := MapGet(rule, "presentation", 0)
+            if !(presentation is Map) || StrLower(String(MapGet(presentation, "mode", "normal"))) != "offscreen"
+                return
+            try {
+                alreadyPrepared := this.WindowRecovery.Has(hwnd)
+                snapshot := alreadyPrepared ? this.WindowRecovery[hwnd] : this.CaptureWindow(hwnd)
+                this.MoveWindowOffscreenNow(hwnd, snapshot, presentation)
+                if !alreadyPrepared
+                    this.WindowRecovery[hwnd] := snapshot
+            }
+            return
+        }
+    }
+
+    MoveWindowOffscreenNow(hwnd, snapshot, presentation) {
+        if snapshot["state"] != 0
+            WinRestore("ahk_id " hwnd)
+        margin := Max(16, Min(1000, Integer(MapGet(presentation, "margin", 64))))
+        virtualX := DllCall("GetSystemMetrics", "Int", 76, "Int")
+        virtualY := DllCall("GetSystemMetrics", "Int", 77, "Int")
+        virtualWidth := DllCall("GetSystemMetrics", "Int", 78, "Int")
+        virtualHeight := DllCall("GetSystemMetrics", "Int", 79, "Int")
+        edge := StrLower(String(MapGet(presentation, "edge", "top")))
+        if edge == "bottom"
+            offX := virtualX, offY := virtualY + virtualHeight + margin
+        else if edge == "left"
+            offX := virtualX - snapshot["width"] - margin, offY := virtualY
+        else if edge == "right"
+            offX := virtualX + virtualWidth + margin, offY := virtualY
+        else
+            offX := virtualX, offY := virtualY - snapshot["height"] - margin
+        WinMove(offX, offY, snapshot["width"], snapshot["height"], "ahk_id " hwnd)
     }
 
     RestoreWindowIfNeeded(hwnd) {

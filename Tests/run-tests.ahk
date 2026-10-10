@@ -77,6 +77,8 @@ suite.Run("Window-state map cleanup is idempotent", (*) => (
     suite.Assert(!MapTakeIfPresent(state, 2492342, &removed), "Repeated HWND take should be a no-op")
 ))
 
+suite.Run("Keyboard text normalization preserves lines and removes formatting artifacts", (*) => TestKeyboardTextNormalization(suite))
+
 suite.Run("AES-GCM credential round trip", (*) => (
     plain := '{"schemaVersion":2,"message":"päss 🔐"}',
     envelope := CngCrypto.EncryptText(plain, "correct horse battery staple"),
@@ -157,6 +159,15 @@ TestRadminRuleUpgrade(suite) {
     suite.Assert(!rule["match"].Has("process") && rule["match"]["titleRegex"] == "i)^Radmin security:", "Radmin match was not repaired")
     suite.Assert(rule["steps"].Length == 4 && rule["steps"][3]["action"] == "setChecked", "Radmin Save User step was not repaired")
     suite.Assert(rule["steps"][4]["control"] == "Button2", "Radmin submit control was not repaired")
+}
+
+TestKeyboardTextNormalization(suite) {
+    mixedLines := "one`r`ntwo`rthree`n" Chr(0x2028) "five" Chr(0x2029) "six"
+    suite.Assert(NormalizeLineEndings(mixedLines) == "one`ntwo`nthree`n`nfive`nsix", "Mixed line endings were not normalized")
+    formatted := Chr(0x1D400) Chr(0x00A0) Chr(0x201C) "quoted" Chr(0x201D) Chr(0x2014) "done" Chr(0x2026) Chr(0x200B)
+    suite.Assert(NormalizeKeyboardText(formatted) == 'A "quoted"-done...', "Keyboard compatibility normalization failed")
+    lines := SplitTextLines("first`r`n`r`nthird`r`n")
+    suite.Assert(lines.Length == 4 && lines[1] == "first" && lines[2] == "" && lines[3] == "third" && lines[4] == "", "Line splitting did not preserve empty or trailing lines")
 }
 
 TestCredentialStore(suite) {
@@ -291,7 +302,7 @@ TestWorkerTimeout(suite) {
 TestSendWorker(suite) {
     global SendWorkerResult := ""
     testGui := Gui(, "ShortcutKeys Send Worker Test")
-    textControl := testGui.AddEdit("w400")
+    textControl := testGui.AddEdit("w400 r5")
     testGui.Show()
     textControl.Focus()
     manager := PersistentWorkerSupervisor(AppLogger("tests", A_Temp "\ShortcutKeysTests"))
@@ -317,6 +328,16 @@ TestSendWorker(suite) {
         WaitForResult(&SendWorkerResult)
         suite.Assert(SendWorkerResult["ok"], "Invalid-control fallback failed: " JsonDump(SendWorkerResult))
         suite.Assert(textControl.Value == "invalid-control fallback", "Invalid-control fallback did not send text; actual=" textControl.Value)
+
+        textControl.Value := "", SendWorkerResult := ""
+        keyboardText := "first line`r`nsecond {+} ^!#"
+        manager.Submit("send", "send", Map(
+            "targetHwnd", testGui.Hwnd, "targetControl", "Edit1", "text", keyboardText,
+            "delayMs", 1, "guard", 1, "sendMode", "keyboard", "timeoutMs", 10000
+        ), (response) => SendWorkerResult := response, 15000)
+        WaitForResult(&SendWorkerResult, 15000)
+        suite.Assert(SendWorkerResult["ok"], "Keyboard-event worker mode failed: " JsonDump(SendWorkerResult))
+        suite.Assert(NormalizeLineEndings(textControl.Value) == NormalizeLineEndings(keyboardText), "Keyboard mode did not preserve newlines or literal special characters; actual=" textControl.Value)
     } finally {
         manager.Stop()
         testGui.Destroy()

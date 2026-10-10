@@ -90,59 +90,109 @@ class SendWorker {
 
     HandleJob(job) {
         PipeProtocol.ValidateJob(job, "send")
+        keyDelayChanged := false
+        previousKeyDelay := A_KeyDelay
+        previousKeyDuration := A_KeyDuration
         try {
             payload := job["payload"]
             hwnd := Integer(MapGet(payload, "targetHwnd", 0))
             targetControl := String(MapGet(payload, "targetControl"))
-            text := String(MapGet(payload, "text"))
+            text := NormalizeLineEndings(String(MapGet(payload, "text")))
             delayMs := Max(0, Min(1000, Integer(MapGet(payload, "delayMs", 0))))
             useGuard := !!MapGet(payload, "guard", false)
+            sendMode := StrLower(String(MapGet(payload, "sendMode", "control")))
+            safetyTimeoutMs := Max(10000, Min(595000, Integer(MapGet(payload, "timeoutMs", 60000))))
+            if sendMode != "control" && sendMode != "keyboard"
+                throw AppError("The text send mode is invalid", "INVALID_SEND_MODE")
             if !hwnd || !WinExist("ahk_id " hwnd)
                 throw AppError("The target window no longer exists", "TARGET_GONE")
             this.WaitForModifiers(3000)
+            if sendMode == "keyboard" {
+                SetKeyDelay(0, -1)
+                keyDelayChanged := true
+                this.PrepareKeyboardTarget(hwnd, targetControl)
+            }
             if useGuard {
                 this.Guard := ScopedInputGuard(hwnd)
                 this.Guard.Start()
             }
             started := A_TickCount
-            parts := []
-            if delayMs {
-                position := 1
-                while position := RegExMatch(text, "\X", &grapheme, position) {
-                    parts.Push(grapheme[0])
-                    position += grapheme.Len
-                }
-            } else {
-                parts.Push(text)
-            }
+            parts := this.BuildParts(text, delayMs > 0)
             for part in parts {
                 if !WinExist("ahk_id " hwnd)
                     throw AppError("The target window closed during input", "TARGET_GONE")
                 if this.Guard is ScopedInputGuard {
                     if this.Guard.Cancelled
                         throw AppError("Input was canceled with Ctrl+Alt+Esc", "CANCELED")
-                    if !this.Guard.IsTargetActive()
+                    if !this.Guard.IsTargetActive() {
                         this.Guard.Stop()
+                        if sendMode == "keyboard"
+                            throw AppError("The target window lost focus during keyboard entry", "TARGET_NOT_ACTIVE")
+                    }
                 }
-                if A_TickCount - started > 60000
+                if A_TickCount - started > safetyTimeoutMs
                     throw AppError("Text entry exceeded the safety timeout", "SEND_TIMEOUT")
-                this.SendLiteralPart(hwnd, targetControl, part)
+                this.SendLiteralPart(hwnd, targetControl, part, sendMode)
                 if delayMs
                     Sleep(delayMs)
             }
-            this.Logger.Info("Text entry completed", Map("targetHwnd", hwnd, "characterCount", StrLen(text), "guard", useGuard))
+            this.Logger.Info("Text entry completed", Map("targetHwnd", hwnd, "characterCount", StrLen(text), "guard", useGuard, "sendMode", sendMode))
             return WorkerReply(job, true)
         } finally {
             if this.Guard is ScopedInputGuard
                 this.Guard.Stop()
             this.Guard := ""
+            if keyDelayChanged
+                SetKeyDelay(previousKeyDelay, previousKeyDuration)
         }
     }
 
-    SendLiteralPart(hwnd, targetControl, text) {
+    PrepareKeyboardTarget(hwnd, targetControl) {
+        WinActivate("ahk_id " hwnd)
+        if !WinWaitActive("ahk_id " hwnd,, 2)
+            throw AppError("The target window could not be activated", "TARGET_NOT_ACTIVE")
+        if targetControl != ""
+            try ControlFocus(targetControl, "ahk_id " hwnd)
+    }
+
+    BuildParts(text, oneGraphemeAtATime) {
+        parts := []
+        if oneGraphemeAtATime {
+            position := 1
+            while position := RegExMatch(text, "\X", &grapheme, position) {
+                parts.Push(grapheme[0])
+                position += grapheme.Len
+            }
+            return parts
+        }
+        position := 1
+        while position := RegExMatch(text, "[^\n\t]+|[\n\t]", &part, position) {
+            parts.Push(part[0])
+            position += part.Len
+        }
+        return parts
+    }
+
+    SendLiteralPart(hwnd, targetControl, text, sendMode := "control") {
+        if sendMode == "keyboard" {
+            if !WinActive("ahk_id " hwnd)
+                throw AppError("The target window is no longer active", "TARGET_NOT_ACTIVE")
+            if text == "`n"
+                SendEvent("{Enter}")
+            else if text == "`t"
+                SendEvent("{Tab}")
+            else
+                SendEvent("{Text}" text)
+            return
+        }
         if targetControl != "" {
             try {
-                ControlSendText(text, targetControl, "ahk_id " hwnd)
+                if text == "`n"
+                    ControlSend("{Enter}", targetControl, "ahk_id " hwnd)
+                else if text == "`t"
+                    ControlSend("{Tab}", targetControl, "ahk_id " hwnd)
+                else
+                    ControlSendText(text, targetControl, "ahk_id " hwnd)
                 return
             } catch as controlError {
                 ; Browsers and other modern applications may report a focused
@@ -155,7 +205,12 @@ class SendWorker {
         }
         if !WinActive("ahk_id " hwnd)
             throw AppError("The target has no usable control and is no longer active", "TARGET_NOT_ACTIVE")
-        SendText(text)
+        if text == "`n"
+            SendEvent("{Enter}")
+        else if text == "`t"
+            SendEvent("{Tab}")
+        else
+            SendText(text)
     }
 
     WaitForModifiers(timeoutMs) {

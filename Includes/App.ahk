@@ -123,3 +123,48 @@ HasOption(args, name) {
             return true
     return false
 }
+
+NormalizeLineEndings(text) {
+    text := StrReplace(String(text), "`r`n", "`n")
+    text := StrReplace(text, "`r", "`n")
+    text := StrReplace(text, Chr(0x2028), "`n")
+    return StrReplace(text, Chr(0x2029), "`n")
+}
+
+NormalizeCompatibilityText(text) {
+    text := String(text)
+    if text == ""
+        return text
+    required := DllCall("Normaliz\NormalizeString", "Int", 5, "Str", text, "Int", StrLen(text), "Ptr", 0, "Int", 0, "Int")
+    if required <= 0
+        return text
+    normalized := Buffer(required * 2, 0)
+    written := DllCall("Normaliz\NormalizeString", "Int", 5, "Str", text, "Int", StrLen(text), "Ptr", normalized.Ptr, "Int", required, "Int")
+    return written > 0 ? StrGet(normalized, written, "UTF-16") : text
+}
+
+NormalizeKeyboardText(text) {
+    text := NormalizeCompatibilityText(NormalizeLineEndings(text))
+    replacements := Map(
+        Chr(0x00A0), " ",
+        Chr(0x2018), "'", Chr(0x2019), "'", Chr(0x201A), "'", Chr(0x201B), "'",
+        Chr(0x201C), Chr(34), Chr(0x201D), Chr(34), Chr(0x201E), Chr(34), Chr(0x201F), Chr(34),
+        Chr(0x2010), "-", Chr(0x2011), "-", Chr(0x2012), "-", Chr(0x2013), "-", Chr(0x2014), "-",
+        Chr(0x2026), "..."
+    )
+    for source, replacement in replacements
+        text := StrReplace(text, source, replacement)
+    return RegExReplace(text, "[\x{200B}-\x{200D}\x{2060}\x{FEFF}]")
+}
+
+SplitTextLines(text) {
+    text := NormalizeLineEndings(text)
+    lines := []
+    start := 1
+    while position := InStr(text, "`n",, start) {
+        lines.Push(SubStr(text, start, position - start))
+        start := position + 1
+    }
+    lines.Push(SubStr(text, start))
+    return lines
+}

@@ -21,7 +21,7 @@ Workers handshake before accepting jobs, are reused across jobs, and restart wit
 | `Shift+F8` | Send `passwords.password_Shift` |
 | `Alt+F8` | Send `passwords.password_Alt` |
 | Hold an F8 combination for 500 ms | Send at 100 ms per grapheme |
-| `Ctrl+F8` | Open the text-entry window; Ctrl+Enter submits |
+| `Ctrl+F8` | Open the keyboard text-entry window; Ctrl+Enter submits |
 | Short `F1` | Pause or re-enable automatic filling |
 | Long `F1` | Send a normal F1 |
 | `Ctrl+Alt+Esc` | Cancel guarded Ctrl+F8 input |
@@ -35,6 +35,14 @@ The validated master password can be cached under `HKCU\Software\shortcut-keys` 
 The encrypted file is intentionally tracked in this repository. That permits offline password guessing, so use a strong, unique master password. Plaintext exports are never removed automatically.
 
 Worker requests travel through long-lived inherited anonymous pipes. Passwords and entered text do not appear in worker command lines, logs, tooltips, or the clipboard.
+
+## Keyboard text entry and noVNC
+
+The Ctrl+F8 window sends keyboard events to the originally active window; it does not use clipboard paste for delivery. Its delay field accepts 0 to 1000 milliseconds per grapheme and defaults to 30 ms, matching the older v1 behavior. Use a small value for a responsive noVNC session and increase it when the browser or remote machine drops input.
+
+All CRLF, LF, CR, and Unicode line separators are normalized, and each newline is sent as an Enter key event. The optional compatibility normalization (enabled by default) converts compatibility-styled Unicode, non-breaking spaces, smart quotes, long dashes, and ellipses to keyboard-friendly plain text. Pasting into the ordinary Edit control already removes rich-text bold, italic, and underline metadata.
+
+**Confirm before sending each next line** is off by default. When enabled, the first line is sent and a Next line / Cancel window appears before every subsequent line. Ctrl+Alt+Esc remains the emergency cancellation shortcut while a line is actively being sent.
 
 ## Configuration
 
@@ -56,7 +64,7 @@ Default control and window waits are 5 seconds with 50 ms retries. Every operati
 
 For native `setText` steps, `direct` is the backward-compatible default and uses the Windows control API. `paste` temporarily places the value on the clipboard, sends a synchronous paste to the exact control, and immediately restores the prior clipboard contents. `type` sends literal key events and accepts an optional `keyDelayMs` from 0 to 1000 (default 10 ms). Because `paste` necessarily exposes the value to clipboard observers for a short interval, prefer `direct` or `type` when that risk matters.
 
-Native rules may specify `presentation.mode: "offscreen"`. The worker moves the exact window beyond the complete virtual desktop, fills it, and restores its original position and state. Both the worker and controller retain restoration paths so a worker timeout or crash does not leave the window offscreen. This is visual concealment, not a security boundary.
+Native rules may specify `presentation.mode: "offscreen"`. The controller moves a matching HWND beyond the complete virtual desktop immediately inside its create/show event handler, before it queues the autofill job. The worker then fills it and restores its original position and state when appropriate. Both the worker and controller retain restoration paths so a worker timeout or crash does not leave the window offscreen. Windows reports an external application's show event after the window exists, so this is the earliest supported interception point rather than a guarantee that the compositor never draws a frame. This is visual concealment, not a security boundary.
 
 The bundled Radmin rule matches the `#32770` dialog whose title begins with `Radmin security:` (case-insensitively). It intentionally has no process restriction because the authentication dialog can be owned by the Radmin server process rather than `Radmin.exe`. It fills `Edit1` and `Edit2`, checks the Save User control (`Button1`), and submits with `Button2`. Existing dialogs are scanned immediately after credentials are unlocked, so Radmin may be opened before ShortcutKeys starts.
 
