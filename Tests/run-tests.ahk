@@ -86,6 +86,7 @@ suite.Run("Window-state map cleanup is idempotent", (*) => (
 ))
 
 suite.Run("Keyboard text normalization preserves lines and removes formatting artifacts", (*) => TestKeyboardTextNormalization(suite))
+suite.Run("Text-entry edit displays mixed line endings", (*) => TestTextEntryMixedLineEndings(suite))
 
 suite.Run("AES-GCM credential round trip", (*) => (
     plain := '{"schemaVersion":2,"message":"päss 🔐"}',
@@ -213,6 +214,29 @@ TestKeyboardTextNormalization(suite) {
     suite.Assert(NormalizeKeyboardText(formatted) == 'A "quoted"-done...', "Keyboard compatibility normalization failed")
     lines := SplitTextLines("first`r`n`r`nthird`r`n")
     suite.Assert(lines.Length == 4 && lines[1] == "first" && lines[2] == "" && lines[3] == "third" && lines[4] == "", "Line splitting did not preserve empty or trailing lines")
+}
+
+TestTextEntryMixedLineEndings(suite) {
+    testGui := Gui()
+    inputEdit := testGui.AddEdit("w300 h120 WantTab")
+    try {
+        suite.Assert(EnableMixedLineEndingPaste(inputEdit.Hwnd), "Edit control rejected mixed-line-ending paste styles")
+        samples := [
+            Map("input", "one`ntwo", "lines", 2),
+            Map("input", "one`rtwo", "lines", 2),
+            Map("input", "one`r`ntwo", "lines", 2),
+            Map("input", "one`ntwo`rthree`r`nfour", "lines", 4)
+        ]
+        for sample in samples {
+            inputEdit.Value := ""
+            input := sample["input"]
+            ; EM_REPLACESEL inserts without touching the user's clipboard.
+            DllCall("user32\SendMessageW", "Ptr", inputEdit.Hwnd, "UInt", 0xC2, "UPtr", 1, "Ptr", StrPtr(input), "Ptr")
+            lineCount := DllCall("user32\SendMessageW", "Ptr", inputEdit.Hwnd, "UInt", 0xBA, "UPtr", 0, "Ptr", 0, "Ptr") ; EM_GETLINECOUNT
+            suite.Assert(lineCount == sample["lines"], "Edit control displayed " lineCount " lines instead of " sample["lines"])
+            suite.Assert(NormalizeLineEndings(inputEdit.Value) == NormalizeLineEndings(input), "Edit control changed pasted text")
+        }
+    } finally testGui.Destroy()
 }
 
 TestCredentialStore(suite) {

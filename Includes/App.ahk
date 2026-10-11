@@ -131,6 +131,21 @@ NormalizeLineEndings(text) {
     return StrReplace(text, Chr(0x2029), "`n")
 }
 
+EnableMixedLineEndingPaste(editHwnd) {
+    ; These are edit-control extended styles, not WS_EX_* window styles.
+    ; Let the control display pasted CR, LF and CRLF as lines, and convert
+    ; pasted line endings to the document's normal CRLF form. The clipboard
+    ; and the user's current selection are not modified.
+    static EM_SETEXTENDEDSTYLE := 0x150A, EM_GETEXTENDEDSTYLE := 0x150B
+    static ES_EX_ALLOWEOL_CR := 0x1, ES_EX_ALLOWEOL_LF := 0x2
+    static ES_EX_CONVERT_EOL_ON_PASTE := 0x4
+    styles := ES_EX_ALLOWEOL_CR | ES_EX_ALLOWEOL_LF | ES_EX_CONVERT_EOL_ON_PASTE
+    ; The GUI has not been shown yet, so direct HWND messaging also works
+    ; when AutoHotkey's hidden-window detection is disabled.
+    DllCall("user32\SendMessageW", "Ptr", editHwnd, "UInt", EM_SETEXTENDEDSTYLE, "UPtr", styles, "Ptr", styles, "Ptr")
+    return (DllCall("user32\SendMessageW", "Ptr", editHwnd, "UInt", EM_GETEXTENDEDSTYLE, "UPtr", 0, "Ptr", 0, "Ptr") & styles) == styles
+}
+
 NormalizeCompatibilityText(text) {
     text := String(text)
     if text == ""

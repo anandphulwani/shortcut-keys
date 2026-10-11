@@ -259,26 +259,68 @@ function connect() {
   }
 }
 
-function probeNoVnc() {
-  return import("/novnc/app/ui.js").then(({ default: UI }) => {
-    const rfb = UI?.rfb;
-    if (!document.getElementById("noVNC_container") || !rfb || rfb._rfbConnectionState !== "connected" || rfb.viewOnly)
-      return { eligible: false };
-    return { eligible: true, label: document.title.slice(0, 120) || "Proxmox noVNC console" };
-  }).catch(() => ({ eligible: false }));
+async function probeNoVnc() {
+  if (!document.getElementById("noVNC_container")) return { eligible: false };
+  // Proxmox adds ?ver= to its imports. Importing the unversioned URL creates
+  // another UI singleton with no connection, even while the visible VM works.
+  const inlineImport = Array.from(document.scripts || [])
+    .filter(script => script.type === "module" && !script.src)
+    .map(script => script.textContent.match(/\bimport\s+\w+\s+from\s+["'](\/novnc\/app\.js(?:\?[^"']*)?)["']/))
+    .find(Boolean)?.[1];
+  const version = Array.from(document.scripts || [])
+    .map(script => { try { const url = new URL(script.src); return url.pathname === "/novnc/app/error-handler.js" ? url.search : ""; }
+      catch { return ""; } })
+    .find(Boolean) || "";
+  const modulePaths = [inlineImport, `/novnc/app.js${version}`, "/novnc/app/ui.js", "/novnc/app.js"]
+    .filter((path, index, paths) => path && paths.indexOf(path) === index);
+  let UI;
+  for (const modulePath of modulePaths) {
+    try {
+      const candidate = (await import(modulePath)).default;
+      if (candidate?.rfb) { UI = candidate; break; }
+    } catch { /* Older and bundled Proxmox releases expose different modules. */ }
+  }
+  const rfb = UI?.rfb;
+  if (!rfb || rfb._rfbConnectionState !== "connected" || rfb.viewOnly) return { eligible: false };
+  return { eligible: true, label: document.title.slice(0, 120) || "Proxmox noVNC console" };
 }
 
 async function sendNoVnc(text, delayMs, expectedUrl) {
   if (location.href !== expectedUrl) return { ok: false, code: "BROWSER_SESSION_CHANGED" };
-  let UI, keysyms;
-  try {
-    [{ default: UI }, { default: keysyms }] = await Promise.all([
-      import("/novnc/app/ui.js"), import("/novnc/core/input/keysymdef.js")
-    ]);
+  if (!document.getElementById("noVNC_container")) return { ok: false, code: "NOVNC_UNAVAILABLE" };
+  const inlineImport = Array.from(document.scripts || [])
+    .filter(script => script.type === "module" && !script.src)
+    .map(script => script.textContent.match(/\bimport\s+\w+\s+from\s+["'](\/novnc\/app\.js(?:\?[^"']*)?)["']/))
+    .find(Boolean)?.[1];
+  const version = Array.from(document.scripts || [])
+    .map(script => { try { const url = new URL(script.src); return url.pathname === "/novnc/app/error-handler.js" ? url.search : ""; }
+      catch { return ""; } })
+    .find(Boolean) || "";
+  const modulePaths = [inlineImport, `/novnc/app.js${version}`, "/novnc/app/ui.js", "/novnc/app.js"]
+    .filter((path, index, paths) => path && paths.indexOf(path) === index);
+  let UI, bundled = false, keysyms;
+  for (const modulePath of modulePaths) {
+    try {
+      const candidate = (await import(modulePath)).default;
+      if (candidate?.rfb) { UI = candidate; bundled = modulePath.startsWith("/novnc/app.js"); break; }
+    } catch { /* Older and bundled Proxmox releases expose different modules. */ }
   }
-  catch { return { ok: false, code: "NOVNC_UNAVAILABLE" }; }
+  if (!UI) return { ok: false, code: "NOVNC_UNAVAILABLE" };
+  if (!bundled) {
+    try { keysyms = (await import("/novnc/core/input/keysymdef.js")).default; }
+    catch { /* The Unicode keysym fallback below is still available. */ }
+  }
   const rfb = UI?.rfb;
-  if (!document.getElementById("noVNC_container") || !rfb) return { ok: false, code: "NOVNC_UNAVAILABLE" };
+  if (!rfb) return { ok: false, code: "NOVNC_UNAVAILABLE" };
+  // Match the guest's US keyboard layout. Passing only a keysym leaves QEMU
+  // without a physical scancode, so uppercase and shifted symbols can arrive
+  // as their unshifted keys. Unknown Unicode keeps the keysym-only path.
+  const plainSymbols = "`1234567890-=[]\\;',./";
+  const shiftedSymbols = '~!@#$%^&*()_+{}|:"<>?';
+  const symbolCodes = ["Backquote", "Digit1", "Digit2", "Digit3", "Digit4", "Digit5",
+    "Digit6", "Digit7", "Digit8", "Digit9", "Digit0", "Minus", "Equal",
+    "BracketLeft", "BracketRight", "Backslash", "Semicolon", "Quote",
+    "Comma", "Period", "Slash"];
   const graphemes = typeof Intl.Segmenter === "function"
     ? Array.from(new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(text), item => item.segment)
     : Array.from(text);
@@ -291,9 +333,34 @@ async function sendNoVnc(text, delayMs, expectedUrl) {
       let keysym;
       if (character === "\n") keysym = 0xff0d;
       else if (character === "\t") keysym = 0xff09;
-      else if (codePoint >= 0x20 && codePoint <= 0x10ffff && (codePoint < 0xd800 || codePoint > 0xdfff)) keysym = keysyms.lookup(codePoint);
+      else if (codePoint >= 0x20 && codePoint <= 0x10ffff && (codePoint < 0xd800 || codePoint > 0xdfff)) {
+        // Match noVNC's Latin-1 and Unicode fallback when its mapping table is bundled.
+        keysym = keysyms?.lookup?.(codePoint) ?? (codePoint <= 0xff ? codePoint : 0x01000000 | codePoint);
+      }
       else return { ok: false, code: "NOVNC_UNSUPPORTED_CHARACTER" };
-      rfb.sendKey(keysym, null);
+      let code = null, needsShift = false;
+      if (character >= "a" && character <= "z" || character >= "A" && character <= "Z") {
+        code = `Key${character.toUpperCase()}`;
+        needsShift = character >= "A" && character <= "Z";
+      } else if (character === " ") code = "Space";
+      else if (character === "\n") code = "Enter";
+      else if (character === "\t") code = "Tab";
+      else {
+        let symbolIndex = plainSymbols.indexOf(character);
+        if (symbolIndex < 0) {
+          symbolIndex = shiftedSymbols.indexOf(character);
+          needsShift = symbolIndex >= 0;
+        }
+        if (symbolIndex >= 0) code = symbolCodes[symbolIndex];
+      }
+      if (needsShift) {
+        try {
+          rfb.sendKey(0xffe1, "ShiftLeft", true);
+          rfb.sendKey(keysym, code);
+        } finally {
+          rfb.sendKey(0xffe1, "ShiftLeft", false);
+        }
+      } else rfb.sendKey(keysym, code);
     }
     if (delayMs > 0) await new Promise(resolve => setTimeout(resolve, delayMs));
   }

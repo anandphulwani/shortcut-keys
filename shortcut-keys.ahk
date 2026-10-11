@@ -241,6 +241,11 @@ class ShortcutKeysApplication {
         windowGui.SetFont("s10", "Segoe UI")
         windowGui.AddText("w600", "Enter text to send. Press Ctrl+Enter to submit.")
         textControl := windowGui.AddEdit("w600 h160 WantTab")
+        try {
+            if !EnableMixedLineEndingPaste(textControl.Hwnd)
+                this.Logger.Warn("The text-entry edit control does not support mixed line endings on paste")
+        } catch as caughtError
+            this.Logger.Warn("Could not enable mixed line endings for text entry", Map("code", caughtError is AppError ? caughtError.Code : Type(caughtError)))
         windowGui.AddText("xm y+10", "Send mode:")
         modeChoice := windowGui.AddDropDownList("xm w300 Choose" this.TextSendMode, ["Foreground keyboard", "Background control", "Direct noVNC"])
         windowGui.AddText("xm y+10", "Delay between keyboard events (milliseconds):")
